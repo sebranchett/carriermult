@@ -30,7 +30,8 @@ run_CM_calculations = True          # Find CM transitions. If save_transitions
 
 # Location of the Abinit *GSR.nc file. This is the file that contains the
 # k-points,eigenvalues, etc
-abinit_file = r'/home/svenw/example_cmscript/MoTe2_4x4x4_1o_GSR.nc'
+# abinit_file = r'/home/svenw/example_cmscript/MoTe2_4x4x4_1o_GSR.nc'
+abinit_file = r'./MoTe2_4x4x4_1o_GSR.nc'
 
 
 # Experimental bandgap - This is used for the scissor operator
@@ -491,7 +492,6 @@ def plot_BZ(bz_lattice, kpoints=None, ax=None, **kwargs):
 def find_CMcount(
     energies, Ncm, BG, Emax=4, dE=0.01, degenerate=True, averaging=False
 ):
-    from tqdm import tqdm
     # returns array with
     # col0: photon energy that will produce electron-hole pair
     # col1: # primary electron CM transitions
@@ -879,7 +879,8 @@ if __name__ == "__main__":      # This is needed if you want to import
                     i, kpoints, red_energies, TrueBG,
                     Emin=Emin, Emax=Emax, save_kfile=save_kfile,
                     kfilename=kfilename, save_CMfile=save_CMfile,
-                    cmfilename=CMfilename, etol=etol) for i in tqdm(kparralel))
+                    cmfilename=CMfilename, etol=etol
+                ) for i in tqdm(kparralel))
             Ncm += sum(data)
             if degenerate:
                 Ncm *= 16   # Each band is 2fold degenerate. We have 4 energy
