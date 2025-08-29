@@ -642,8 +642,8 @@ if __name__ == "__main__":      # This is needed if you want to import
     msg_title('END INPUT')
 
     # ############## Load nc file ###############
-    kpoints, reciprocal_lattice, reciprocal_lattice_inv, \
-        energies = load_abinit_nc_file(abinit_file)
+    reciprocal_lattice, reciprocal_lattice_inv, \
+        kpoints, energies = load_abinit_nc_file(abinit_file)
 
     #####
     # The following part limits the energy array to the values Emin and Emax
