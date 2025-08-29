@@ -1,3 +1,6 @@
 .vscode/
 MoTe2/
+*.nc
+*.csv
+*.txt
 
