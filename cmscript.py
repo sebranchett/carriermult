@@ -16,7 +16,7 @@ from datetime import timedelta
 from abipy.abilab import abiopen
 import multiprocessing
 from tqdm import tqdm
-from joblib import Parallel, delayed
+# from joblib import Parallel, delayed
 
 
 ###############################################################################
@@ -588,6 +588,71 @@ def load_and_organize_CMcsv(CMfilename):
     return CM_transitions.sort_values(by=['ki', 'Ei', 'kf', 'Ef'])
 
 
+def load_abinit_nc_file(abinit_file):
+    log()
+    msg_title('INITIALIZING INPUT DATA')
+    log()
+    log("Loading abinit file from: \n"+abinit_file)
+    log()
+    try:
+        with abiopen(abinit_file) as ncfile:
+            abinit = ncfile.ebands
+    except FileNotFoundError:
+        msg_error(
+            'Abinit *GSR.nc file cannot be loaded, '
+            'check given path for Abinit file'
+        )
+        sys.exit()
+
+    log("File loaded")
+    info = [abinit.nkpt, abinit.nband]
+    log("k-points: {} \nBands: {}".format(*info))
+    log()
+
+#   ############################################
+
+#   ############### gather kpoints #############
+
+    log(
+        "Gathering k-points in Cartesian coordinates & "
+        "calculating vector magnitudes.."
+    )
+    reciprocal_lattice = abinit.kpoints._reciprocal_lattice._matrix
+    reciprocal_lattice_inv = abinit.kpoints._reciprocal_lattice.inv_matrix
+    nkpt = abinit.nkpt
+    kpoints = np.zeros([nkpt, 4])
+    kpoints[:, :3] = abinit.kpoints.get_cart_coords()
+    # The magnitude of the k-vectors are calculated in order to speed up the
+    # find_ktransitions function
+    for k in range(kpoints.shape[0]):
+        kpoints[k, 3] = np.sqrt(np.dot(kpoints[k, :3], kpoints[k, :3]))
+
+    log("Done\n")
+
+#   ############################################
+
+#   ############# gather eigenvalues ###########
+    log("Gathering energies..")
+    energies = (np.copy(abinit._eigens[0]) - abinit.get_e0('fermie')).to('eV')
+    # sets VBM as 0 and converts to energies to eV
+    # Since the BG is underestimated in DFT, a scissor operator is used to
+    # shift the CB so that it matches with experimental data
+    DFT_BG = abinit.fundamental_gaps[0].energy
+    scissor = TrueBG - DFT_BG
+    log('Scissor operation:')
+    log(f'Calculated bandgap: {DFT_BG} eV')
+    log(f'Experimental bandgap: {TrueBG} eV')
+    log(f'Shifting CB with: {scissor:1.6f} eV')
+    log('Please check if the calculated bandgap is indeed in eV.')
+    log()
+
+    cbm = abinit.lumos[0][2]
+    energies[:, cbm:] = energies[:, cbm:] + scissor
+
+    return reciprocal_lattice, reciprocal_lattice_inv, \
+        kpoints, energies
+
+
 ###############################################################################
 # Data Initialization
 ###############################################################################
@@ -623,86 +688,8 @@ if __name__ == "__main__":      # This is needed if you want to import
     msg_title('END INPUT')
 
     # ############## Load nc file ###############
-
-    log()
-    msg_title('INITIALIZING INPUT DATA')
-    log()
-    log("Loading abinit file from: \n"+abinit_file)
-    log()
-    try:
-        with abiopen(abinit_file) as ncfile:
-            abinit = ncfile.ebands
-    except FileNotFoundError:
-        msg_error(
-            'Abinit *GSR.nc file cannot be loaded, '
-            'check given path for Abinit file'
-        )
-        sys.exit()
-
-    log("File loaded")
-    info = [abinit.nkpt, abinit.nband]
-    log("k-points: {} \nBands: {}".format(*info))
-    log()
-
-#   ############################################
-
-#   ############### gather kpoints #############
-
-    log(
-        "Gathering k-points in Cartesian coordinates & "
-        "calculating vector magnitudes.."
-    )
-    k_range = (0, abinit.nkpt)
-    reciprocal_lattice = abinit.kpoints._reciprocal_lattice._matrix
-    lattice_constants = abinit.kpoints.reciprocal_lattice.abc
-    reciprocal_lattice_inv = abinit.kpoints._reciprocal_lattice.inv_matrix
-    nkpt = abinit.nkpt
-    kpoints = np.zeros([nkpt, 4])
-    kpoints[:, :3] = abinit.kpoints.get_cart_coords()
-    # The magnitude of the k-vectors are calculated in order to speed up the
-    # find_ktransitions function
-    for k in range(kpoints.shape[0]):
-        kpoints[k, 3] = np.sqrt(np.dot(kpoints[k, :3], kpoints[k, :3]))
-    kpoints_frac = abinit.kpoints.frac_coords
-
-    # Generate BZ for kpoint in BZ checks
-    # bz = abinit.kpoints.reciprocal_lattice.get_wigner_seitz_cell()
-    # bz_array = np.zeros([0,3])
-    # for row in bz:
-    #     bz_array = np.append(bz_array, row, axis=0)
-    # bz_array = np.unique(bz_array,axis=0)
-    # row_order = [0,3,7,11,9,5,1,2,6,10,8,4]
-    # from shapely.geometry import Point, Polygon
-    # bz_polygon = Polygon(bz_array[row_order[:6]])
-
-    # kpoints = Umklapp(abinit.kpoints.get_cart_coords()) # some kpoints fall
-    # outside the BZ, Umklapp corrects them to the BZ
-
-    # for i in range(len(kpoints)):
-    #     kpoints[i,:3] = np.dot(np.transpose(reciprocal_lattice),
-    #     abinit.kpoints.frac_coords[i])
-
-    log("Done\n")
-
-#   ############################################
-
-#   ############# gather eigenvalues ###########
-    log("Gathering energies..")
-    energies = (np.copy(abinit._eigens[0]) - abinit.get_e0('fermie')).to('eV')
-    # sets VBM as 0 and converts to energies to eV
-    # Since the BG is underestimated in DFT, a scissor operator is used to
-    # shift the CB so that it matches with experimental data
-    DFT_BG = abinit.fundamental_gaps[0].energy
-    scissor = TrueBG - DFT_BG
-    log('Scissor operation:')
-    log(f'Calculated bandgap: {DFT_BG} eV')
-    log(f'Experimental bandgap: {TrueBG} eV')
-    log(f'Shifting CB with: {scissor:1.6f} eV')
-    log('Please check if the calculated bandgap is indeed in eV.')
-    log()
-
-    cbm = abinit.lumos[0][2]
-    energies[:, cbm:] = energies[:, cbm:] + scissor
+    kpoints, reciprocal_lattice, reciprocal_lattice_inv, \
+        energies = load_abinit_nc_file(abinit_file)
 
     #####
     # The following part limits the energy array to the values Emin and Emax
