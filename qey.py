@@ -2,7 +2,9 @@ import numpy as np
 import yambopy as ymb
 
 yambo_dir = "./MoTe2/SAVE"
-yambo = ymb.YamboElectronsDB.from_db_file(yambo_dir)
+yambo_file = "ns.db1"
+yambo = ymb.YamboElectronsDB.from_db_file(yambo_dir, yambo_file)
+lattice = ymb.YamboLatticeDB.from_db_file(yambo_dir + "/" + yambo_file)
 yambo_eigs_ibz = yambo.eigenvalues_ibz
 
 # print out the dimensions of yambo_eigs_ibz
@@ -26,3 +28,17 @@ min_conduction = np.min(yambo_eigs[:, :, 92:])
 print("Max valence band energy:", max_valence)
 print("Min conduction band energy:", min_conduction)
 print("Calculated band gap:", min_conduction - max_valence)
+
+print("Reciprocal lattice:")
+print(lattice.rlat)
+
+nkpt = lattice.nkpoints
+kpoints = np.zeros([nkpt, 4])
+kpoints[:, :3] = lattice.car_kpoints
+# The magnitude of the k-vectors are calculated in order to speed up the
+# find_ktransitions function
+for k in range(kpoints.shape[0]):
+    kpoints[k, 3] = np.sqrt(np.dot(kpoints[k, :3], kpoints[k, :3]))
+
+print("K points:")
+print(kpoints)
