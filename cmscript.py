@@ -16,7 +16,7 @@ from datetime import timedelta
 from abipy.abilab import abiopen
 import multiprocessing
 from tqdm import tqdm
-# from joblib import Parallel, delayed
+from joblib import Parallel, delayed
 
 
 ###############################################################################
@@ -442,52 +442,6 @@ def plot_BZ(bz_lattice, kpoints=None, ax=None, **kwargs):
 
     return fig
 
-# Depreciated, can also be found in analysis file
-# def generate_density_plot(CB_photons, VB_photons):
-#     global degenerate
-#     dfs = [pd.read_csv(VB_photons,names=['E']),
-#              pd.read_csv(CB_photons,names=['E'])]
-#     dfs.append((dfs[0].append(dfs[1])))
-
-#     denscsvname = photonfilename.strip('.csv') + '_plot.csv'
-#     denspngname = photonfilename.strip('.csv') + '_plot.png'
-
-#     E = np.linspace(-1,4,500)
-#     density = np.zeros([3, len(E)])
-#     for i in range(len(dfs)):
-#         kde = sc.stats.gaussian_kde(dfs[i]['E'])
-#         kde.covariance_factor = lambda : .1
-#         kde._compute_covariance()
-#         density[i,:] = kde(E)
-#         density[i,:] *= dfs[i].size/ dfs[-1].size # multiply density with
-#             filesize to obtain abs number of transitions
-#         if degenerate:
-#             density[i,:] *= 16 # Multiply with 16 if degenerates were removed
-
-
-#     #density[-1] *= 2
-#         # multiply the total density with 2 since its size is twice as big
-
-#     array = np.array([E,density[0],density[1],density[2]])
-#     array = np.transpose(array)
-#     with open(denscsvname, 'w') as pltcsv:
-#         np.savetxt(pltcsv, array)
-#     log('Density plot data saved in {}'.format(denscsvname))
-
-#     plt.plot(E,density[0],label='VB')
-#     plt.plot(E,density[1],label='CB')
-#     plt.plot(E,density[2],label='Total',color='black')
-#     xticks = np.arange(-1,5,0.5)
-#     plt.xticks(xticks)
-#     plt.title('CM transition density')
-#     plt.xlim(2,4)
-#     plt.xlabel('Photon energy (eV)')
-#     plt.ylabel('Transition density')
-#     plt.legend(loc=2)
-#     plt.savefig(denspngname)
-#     log('Plot saved as {}'.format(denspngname))
-#     plt.show()
-#     return array
 
 def find_CMcount(
     energies, Ncm, BG, Emax=4, dE=0.01, degenerate=True, averaging=False
@@ -788,22 +742,22 @@ if __name__ == "__main__":      # This is needed if you want to import
         chunksize = 10000
         start_time = time.time()
 
-        # if True:  # Run function in parallel mode
-        #     data = Parallel(n_jobs=num_cores)(
-        #         delayed(calculate_CM_transitions)(
-        #             i, kpoints, red_energies, TrueBG,
-        #             Emin=Emin, Emax=Emax, save_kfile=save_kfile,
-        #             kfilename=kfilename, save_CMfile=save_CMfile,
-        #             cmfilename=CMfilename, etol=etol
-        #         ) for i in tqdm(kparralel))
-        #     Ncm += sum(data)
-        #     if degenerate:
-        #         Ncm *= 16   # Each band is 2fold degenerate. We have 4 energy
-        #         #             levels that we compare
-        #         #             when finding CM transitions. 2*2*2*2 = 16
-        # # else: # Run function in serial mode
-        # #     msg_error('\'run_combined\' can only be run parallel')
-        # #     sys.exit()
+        if True:  # Run function in parallel mode
+            data = Parallel(n_jobs=num_cores)(
+                delayed(calculate_CM_transitions)(
+                    i, kpoints, red_energies, TrueBG,
+                    Emin=Emin, Emax=Emax, save_kfile=save_kfile,
+                    kfilename=kfilename, save_CMfile=save_CMfile,
+                    cmfilename=CMfilename, etol=etol
+                ) for i in tqdm(kparralel))
+            Ncm += sum(data)
+            if degenerate:
+                Ncm *= 16   # Each band is 2fold degenerate. We have 4 energy
+                #             levels that we compare
+                #             when finding CM transitions. 2*2*2*2 = 16
+        # else: # Run function in serial mode
+        #     msg_error('\'run_combined\' can only be run parallel')
+        #     sys.exit()
         end_time = time.time()
         log('CM transition calculations done!')
         runtime = end_time-start_time
