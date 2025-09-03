@@ -14,9 +14,10 @@ import sys
 from datetime import datetime
 from datetime import timedelta
 from abipy.abilab import abiopen
+from yambopy import YamboElectronsDB, YamboLatticeDB
 import multiprocessing
 from tqdm import tqdm
-from joblib import Parallel, delayed
+# from joblib import Parallel, delayed
 
 
 ###############################################################################
@@ -32,6 +33,13 @@ run_CM_calculations = True          # Find CM transitions. If save_transitions
 # k-points,eigenvalues, etc
 # abinit_file = r'/home/svenw/example_cmscript/MoTe2_4x4x4_1o_GSR.nc'
 abinit_file = r'./MoTe2_4x4x4_1o_GSR.nc'
+# abinit_file = r''
+
+# If abinit_file is empty, Yambo is assumed.
+# Location of the Yambo SAVE directory and the ns.db1 file.
+# This is where Yambo stores the k-points and eigenvalues, etc.
+yambo_dir = r'./MoTe2/SAVE'
+yambo_file = r'ns.db1'
 
 
 # Experimental bandgap - This is used for the scissor operator
@@ -607,6 +615,79 @@ def load_abinit_nc_file(abinit_file):
         kpoints, energies
 
 
+def load_yambo_nc_file(yambo_dir, yambo_file):
+    log()
+    msg_title('INITIALIZING INPUT DATA')
+    log()
+    log("Loading Yambo file from: \n" + yambo_dir + "/" + yambo_file)
+    log()
+    try:
+        yambo = YamboElectronsDB.from_db_file(yambo_dir, yambo_file)
+        lattice = YamboLatticeDB.from_db_file(yambo_dir + "/" + yambo_file)
+    except FileNotFoundError:
+        msg_error(
+            'Yambo ns.db1 file cannot be loaded, '
+            'check given path for Yambo file'
+        )
+        sys.exit()
+
+    log("File loaded")
+    nkpt = lattice.nkpoints
+    info = [nkpt, yambo.nbands]
+    log("k-points: {} \nBands: {}".format(*info))
+    log()
+
+    #   ############################################
+
+    #   ############### gather kpoints #############
+
+    log(
+        "Gathering k-points in Cartesian coordinates & "
+        "calculating vector magnitudes.."
+        )
+
+    reciprocal_lattice = lattice.rlat
+    reciprocal_lattice_inv = np.linalg.inv(reciprocal_lattice)
+
+    kpoints = np.zeros([nkpt, 4])
+    kpoints[:, :3] = lattice.car_kpoints
+    # The magnitude of the k-vectors are calculated in order to speed up the
+    # find_ktransitions function
+    for k in range(kpoints.shape[0]):
+        kpoints[k, 3] = np.sqrt(np.dot(kpoints[k, :3], kpoints[k, :3]))
+
+    log("Done\n")
+
+    #   ############################################
+
+    #   ############# gather eigenvalues ###########
+    log("Gathering energies..")
+
+    # Expand the eigenvalues from the IBZ to the full BZ
+    yambo.expandEigenvalues()
+
+    cbm = yambo.nbandsv
+    max_valence_energy = np.max(yambo.eigenvalues[0, :, :cbm])
+    min_conduction_energy = np.min(yambo.eigenvalues[0, :, cbm:])
+    energies = yambo.eigenvalues[0, :, :] - max_valence_energy
+    # sets VBM as 0
+    # Since the BG is underestimated in DFT, a scissor operator is used to
+    # shift the CB so that it matches with experimental data
+    DFT_BG = min_conduction_energy - max_valence_energy
+    scissor = TrueBG - DFT_BG
+    log('Scissor operation:')
+    log(f'Calculated bandgap: {DFT_BG} eV')
+    log(f'Experimental bandgap: {TrueBG} eV')
+    log(f'Shifting CB with: {scissor:1.6f} eV')
+    log('Please check if the calculated bandgap is indeed in eV.')
+    log()
+
+    energies[:, cbm:] = energies[:, cbm:] + scissor
+
+    return reciprocal_lattice, reciprocal_lattice_inv, \
+        kpoints, energies
+
+
 ###############################################################################
 # Data Initialization
 ###############################################################################
@@ -642,8 +723,14 @@ if __name__ == "__main__":      # This is needed if you want to import
     msg_title('END INPUT')
 
     # ############## Load nc file ###############
-    reciprocal_lattice, reciprocal_lattice_inv, \
-        kpoints, energies = load_abinit_nc_file(abinit_file)
+    # if abinit file has been specified:
+    if abinit_file:
+        reciprocal_lattice, reciprocal_lattice_inv, \
+            kpoints, energies = load_abinit_nc_file(abinit_file)
+    else:
+        # Assume Yambo
+        reciprocal_lattice, reciprocal_lattice_inv, \
+            kpoints, energies = load_yambo_nc_file(yambo_dir, yambo_file)
 
     #####
     # The following part limits the energy array to the values Emin and Emax
@@ -742,22 +829,22 @@ if __name__ == "__main__":      # This is needed if you want to import
         chunksize = 10000
         start_time = time.time()
 
-        if True:  # Run function in parallel mode
-            data = Parallel(n_jobs=num_cores)(
-                delayed(calculate_CM_transitions)(
-                    i, kpoints, red_energies, TrueBG,
-                    Emin=Emin, Emax=Emax, save_kfile=save_kfile,
-                    kfilename=kfilename, save_CMfile=save_CMfile,
-                    cmfilename=CMfilename, etol=etol
-                ) for i in tqdm(kparralel))
-            Ncm += sum(data)
-            if degenerate:
-                Ncm *= 16   # Each band is 2fold degenerate. We have 4 energy
-                #             levels that we compare
-                #             when finding CM transitions. 2*2*2*2 = 16
-        # else: # Run function in serial mode
-        #     msg_error('\'run_combined\' can only be run parallel')
-        #     sys.exit()
+        # if True:  # Run function in parallel mode
+        #     data = Parallel(n_jobs=num_cores)(
+        #         delayed(calculate_CM_transitions)(
+        #             i, kpoints, red_energies, TrueBG,
+        #             Emin=Emin, Emax=Emax, save_kfile=save_kfile,
+        #             kfilename=kfilename, save_CMfile=save_CMfile,
+        #             cmfilename=CMfilename, etol=etol
+        #         ) for i in tqdm(kparralel))
+        #     Ncm += sum(data)
+        #     if degenerate:
+        #         Ncm *= 16   # Each band is 2fold degenerate. We have 4 energy
+        #         #             levels that we compare
+        #         #             when finding CM transitions. 2*2*2*2 = 16
+        # # else: # Run function in serial mode
+        # #     msg_error('\'run_combined\' can only be run parallel')
+        # #     sys.exit()
         end_time = time.time()
         log('CM transition calculations done!')
         runtime = end_time-start_time
