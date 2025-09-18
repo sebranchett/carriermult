@@ -32,8 +32,8 @@ run_CM_calculations = True          # Find CM transitions. If save_transitions
 # Location of the Abinit *GSR.nc file. This is the file that contains the
 # k-points,eigenvalues, etc
 # abinit_file = r'/home/svenw/example_cmscript/MoTe2_4x4x4_1o_GSR.nc'
-# abinit_file = r'./MoTe2_4x4x4_1o_GSR.nc'
-abinit_file = r''
+abinit_file = r'./MoTe2_4x4x4_1o_GSR.nc'
+# abinit_file = r''
 
 # If abinit_file is empty, Yambo is assumed.
 # Location of the Yambo SAVE directory and the ns.db1 file.
@@ -204,6 +204,7 @@ def Umklapp(k):
         if abs(kx) > 0.5:
             k_new[i] = kx + 1 * np.sign(kx) * (np.sign(kx) * -1 *
                                                ((kx - 0.5) // (1) + 1))
+        # if k_new[i] + 0.5 < 1E-6:  # SEB
         if abs(k_new[i] + 0.5) < 1E-6:
             k_new[i] = 0.5
 
@@ -306,7 +307,6 @@ def calculate_CM_transitions(
                     f'{k2frac(kpoints[f, :])} = {k2frac(kff)}'
                 )
                 # print(f'Mismatching k-point: {k2frac(kff)}\n')
-                sys.exit()
             for ff in a[0]:
                 # this may be improved with a np.find function. Find index of
                 # values between range
@@ -652,11 +652,6 @@ def load_yambo_nc_file(yambo_dir, yambo_file):
 
     kpoints = np.zeros([nkpt, 4])
     kpoints[:, :3] = lattice.car_kpoints
-    # The magnitude of the k-vectors are calculated in order to speed up the
-    # find_ktransitions function
-    for k in range(kpoints.shape[0]):
-        kpoints[k, 3] = np.sqrt(np.dot(kpoints[k, :3], kpoints[k, :3]))
-
     log("Done\n")
 
     #   ############################################
@@ -666,6 +661,11 @@ def load_yambo_nc_file(yambo_dir, yambo_file):
 
     # Expand the eigenvalues from the IBZ to the full BZ
     yambo.expandEigenvalues()
+
+    # The magnitude of the k-vectors are calculated in order to speed up the
+    # find_ktransitions function
+    for k in range(kpoints.shape[0]):
+        kpoints[k, 3] = np.sqrt(np.dot(kpoints[k, :3], kpoints[k, :3]))
 
     cbm = yambo.nbandsv
     max_valence_energy = np.max(yambo.eigenvalues[0, :, :cbm])
@@ -830,7 +830,7 @@ if __name__ == "__main__":      # This is needed if you want to import
         chunksize = 10000
         start_time = time.time()
 
-        if True:  # Run function in parallel mode
+        if False:  # Run function in parallel mode
             data = Parallel(n_jobs=num_cores)(
                 delayed(calculate_CM_transitions)(
                     i, kpoints, red_energies, TrueBG,
@@ -843,7 +843,13 @@ if __name__ == "__main__":      # This is needed if you want to import
                 Ncm *= 16   # Each band is 2fold degenerate. We have 4 energy
                 #             levels that we compare
                 #             when finding CM transitions. 2*2*2*2 = 16
-        # else: # Run function in serial mode
+        else:  # Run function in serial mode
+            print('kpoints:', kpoints)
+            calculate_CM_transitions(
+                1, kpoints, red_energies, TrueBG,
+                Emin=Emin, Emax=Emax, save_kfile=save_kfile,
+                kfilename=kfilename, save_CMfile=save_CMfile,
+                cmfilename=CMfilename, etol=etol)
         #     msg_error('\'run_combined\' can only be run parallel')
         #     sys.exit()
         end_time = time.time()
