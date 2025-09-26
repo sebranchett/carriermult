@@ -3,6 +3,7 @@ MoTe2/
 *.nc
 *.csv
 *.txt
+*.xlsx
 
 example_analysis/
 
