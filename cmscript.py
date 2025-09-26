@@ -32,8 +32,8 @@ run_CM_calculations = True          # Find CM transitions. If save_transitions
 # Location of the Abinit *GSR.nc file. This is the file that contains the
 # k-points,eigenvalues, etc
 # abinit_file = r'/home/svenw/example_cmscript/MoTe2_4x4x4_1o_GSR.nc'
-abinit_file = r'./MoTe2_4x4x4_1o_GSR.nc'
-# abinit_file = r''
+# abinit_file = r'./MoTe2_4x4x4_1o_GSR.nc'
+abinit_file = r''
 
 # If abinit_file is empty, Yambo is assumed.
 # Location of the Yambo SAVE directory and the ns.db1 file.
@@ -204,7 +204,6 @@ def Umklapp(k):
         if abs(kx) > 0.5:
             k_new[i] = kx + 1 * np.sign(kx) * (np.sign(kx) * -1 *
                                                ((kx - 0.5) // (1) + 1))
-        # if k_new[i] + 0.5 < 1E-6:  # SEB
         if abs(k_new[i] + 0.5) < 1E-6:
             k_new[i] = 0.5
 
@@ -649,7 +648,6 @@ def load_yambo_nc_file(yambo_dir, yambo_file):
 
     reciprocal_lattice = lattice.rlat
     reciprocal_lattice_inv = np.linalg.inv(reciprocal_lattice)
-
     kpoints = np.zeros([nkpt, 4])
     kpoints[:, :3] = lattice.car_kpoints
     log("Done\n")
@@ -732,6 +730,19 @@ if __name__ == "__main__":      # This is needed if you want to import
         # Assume Yambo
         reciprocal_lattice, reciprocal_lattice_inv, \
             kpoints, energies = load_yambo_nc_file(yambo_dir, yambo_file)
+
+        # print('kpoints are', kpoints)  # SEB
+        # for kpoint in kpoints:
+        #     # check if Umklapp changes kpoint
+        #     old_kpoint = np.copy(kpoint)
+        #     kpoint = Umklapp(kpoint)
+        #     new_length = (kpoint[0]**2 + kpoint[1]**2 + kpoint[2]**2)**0.5
+        #     kpoint = np.append(kpoint, new_length)
+        #     # print('old kpoint:', old_kpoint, 'new kpoint:', kpoint)
+        #     if not (np.abs(old_kpoint - kpoint) < 1e-5).all():
+        #         print('Warning: kpoint {} was changed to {}'.format(
+        #             old_kpoint, kpoint
+        #         ))
 
     #####
     # The following part limits the energy array to the values Emin and Emax
@@ -844,7 +855,11 @@ if __name__ == "__main__":      # This is needed if you want to import
                 #             levels that we compare
                 #             when finding CM transitions. 2*2*2*2 = 16
         else:  # Run function in serial mode
-            print('kpoints:', kpoints)
+            # recip = np.copy(kpoints)  # SEB
+            # for index, kpoint in enumerate(kpoints):
+            #     recip[index, :3] = k2frac(kpoint[:3])
+            #     print('kpoint:', kpoint, 'frac:', recip[index, :3])
+            # print('kpoints:', kpoints)
             calculate_CM_transitions(
                 1, kpoints, red_energies, TrueBG,
                 Emin=Emin, Emax=Emax, save_kfile=save_kfile,
