@@ -660,11 +660,6 @@ def load_yambo_nc_file(yambo_dir, yambo_file):
     # Expand the eigenvalues from the IBZ to the full BZ
     yambo.expandEigenvalues()
 
-    # The magnitude of the k-vectors are calculated in order to speed up the
-    # find_ktransitions function
-    for k in range(kpoints.shape[0]):
-        kpoints[k, 3] = np.sqrt(np.dot(kpoints[k, :3], kpoints[k, :3]))
-
     cbm = yambo.nbandsv
     max_valence_energy = np.max(yambo.eigenvalues[0, :, :cbm])
     min_conduction_energy = np.min(yambo.eigenvalues[0, :, cbm:])
@@ -731,18 +726,13 @@ if __name__ == "__main__":      # This is needed if you want to import
         reciprocal_lattice, reciprocal_lattice_inv, \
             kpoints, energies = load_yambo_nc_file(yambo_dir, yambo_file)
 
-        # print('kpoints are', kpoints)  # SEB
-        # for kpoint in kpoints:
-        #     # check if Umklapp changes kpoint
-        #     old_kpoint = np.copy(kpoint)
-        #     kpoint = Umklapp(kpoint)
-        #     new_length = (kpoint[0]**2 + kpoint[1]**2 + kpoint[2]**2)**0.5
-        #     kpoint = np.append(kpoint, new_length)
-        #     # print('old kpoint:', old_kpoint, 'new kpoint:', kpoint)
-        #     if not (np.abs(old_kpoint - kpoint) < 1e-5).all():
-        #         print('Warning: kpoint {} was changed to {}'.format(
-        #             old_kpoint, kpoint
-        #         ))
+        # The Yambo expansion of kpoints from the IBZ leads to
+        # not all kpoints in the first BZ
+        for i in range(kpoints.shape[0]):
+            kpoints[i, :3] = Umklapp(kpoints[i, :3])
+            # The magnitude of the k-vectors are calculated in order to speed
+            # up the find_ktransitions function
+            kpoints[i, 3] = np.sqrt(np.dot(kpoints[i, :3], kpoints[i, :3]))
 
     #####
     # The following part limits the energy array to the values Emin and Emax
@@ -841,7 +831,7 @@ if __name__ == "__main__":      # This is needed if you want to import
         chunksize = 10000
         start_time = time.time()
 
-        if False:  # Run function in parallel mode
+        if True:  # Run function in parallel mode
             data = Parallel(n_jobs=num_cores)(
                 delayed(calculate_CM_transitions)(
                     i, kpoints, red_energies, TrueBG,
@@ -855,18 +845,13 @@ if __name__ == "__main__":      # This is needed if you want to import
                 #             levels that we compare
                 #             when finding CM transitions. 2*2*2*2 = 16
         else:  # Run function in serial mode
-            # recip = np.copy(kpoints)  # SEB
-            # for index, kpoint in enumerate(kpoints):
-            #     recip[index, :3] = k2frac(kpoint[:3])
-            #     print('kpoint:', kpoint, 'frac:', recip[index, :3])
-            # print('kpoints:', kpoints)
-            calculate_CM_transitions(
-                1, kpoints, red_energies, TrueBG,
-                Emin=Emin, Emax=Emax, save_kfile=save_kfile,
-                kfilename=kfilename, save_CMfile=save_CMfile,
-                cmfilename=CMfilename, etol=etol)
-        #     msg_error('\'run_combined\' can only be run parallel')
-        #     sys.exit()
+            # calculate_CM_transitions(
+            #     1, kpoints, red_energies, TrueBG,
+            #     Emin=Emin, Emax=Emax, save_kfile=save_kfile,
+            #     kfilename=kfilename, save_CMfile=save_CMfile,
+            #     cmfilename=CMfilename, etol=etol)
+            msg_error('\'run_combined\' can only be run parallel')
+            sys.exit()
         end_time = time.time()
         log('CM transition calculations done!')
         runtime = end_time-start_time
