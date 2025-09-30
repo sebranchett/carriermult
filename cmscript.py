@@ -219,48 +219,47 @@ def find_CM_transitions(krow, energies, BG, Emin, Emax, save_CMfile=True,
     if save_CMfile is True:
         transitions = np.zeros([0, 4])
     # transitions = np.zeros([0,8]) # save transitions as integer indices
-    for Ei in reversed(range(energies.shape[1])):
-        if energies[ki, Ei] < Emin:
-            break
-        if energies[ki, Ei] > Emax:
-            continue
-        for Ef in reversed(range(energies.shape[1])):
-            if energies[kf, Ef] <= Emin:
-                break
-            if energies[ki, Ei] - energies[kf, Ef] < BG:
-                continue
-            if energies[ki, Ei] > 0 and energies[kf, Ef] <= 0:
+    # Filter Ei (initial state at ki)
+    Ei_vals = energies[ki]
+    valid_Ei = np.where((Ei_vals >= Emin) & (Ei_vals <= Emax))[0]
+    for Ei in valid_Ei[::-1]:
+        Ei_energy = Ei_vals[Ei]
+        Ef_vals = energies[kf]
+        valid_Ef = np.where((Ef_vals > Emin) & (Ei_energy - Ef_vals >= BG))[0]
+        for Ef in valid_Ef[::-1]:
+            Ef_energy = Ef_vals[Ef]
+            if Ei_energy > 0 and Ef_energy <= 0:
                 # Only consider full VB or full CB transitions. If electron
                 # goes from CB to VB then there is no CM).
                 continue
-            for Eii in range(energies.shape[1]):
-                if energies[kii, Eii] > 0:  # only check energies in VB, since
-                    #                         we want to excite a VB electron
-                    continue
+            Eii_vals = energies[kii]
+            valid_Eii = np.where((Eii_vals <= 0))[0]
+            for Eii in valid_Eii:
+                Eii_energy = Eii_vals[Eii]
                 # E_min = energies[ki,Ei] - energies[kf, Ef] +
                 # energies[kii,Eii] - etol
                 # E_max = energies[ki,Ei] - energies[kf, Ef] +
                 # energies[kii,Eii] + etol
-                for Eff in reversed(range(energies.shape[1])):
-                    if energies[kff, Eff] <= 0:  # only check energies in CB,
-                        #              since the electron needs to be excited
-                        break
+                Eff_vals = energies[kff]
+                valid_Eff = np.where((Eff_vals > 0))[0]
+                for Eff in valid_Eff[::-1]:
+                    Eff_energy = Eff_vals[Eff]
                     # if Eff > 0 and (energies[kff,Eff] - energies[kff,Eff-1]
                     #     < 0.0001):
                     # Do not include if energies are more or less the same
                     #     continue
                     dE = (
-                        energies[ki, Ei] - energies[kf, Ef] +
-                        energies[kii, Eii] - energies[kff, Eff]
+                        Ei_energy - Ef_energy +
+                        Eii_energy - Eff_energy
                     )
                     if abs(dE) < etol:
                         # For CB the initial CM state is an electron
-                        if energies[ki, Ei] > 0:
+                        if Ei_energy > 0:
                             new_transition = [[ki, Ei, kf, Ef]]
                         # For a VB transition, the CM carrier is a hole and
                         # therefore we change the order of initial & final
                         # state
-                        if energies[ki, Ei] <= 0:
+                        if Ei_energy <= 0:
                             new_transition = [[kf, Ef, ki, Ei]]
                         Ncm[new_transition[0][0], new_transition[0][1]] += 1
                         if save_CMfile is True:
@@ -847,13 +846,13 @@ if __name__ == "__main__":      # This is needed if you want to import
                 #             levels that we compare
                 #             when finding CM transitions. 2*2*2*2 = 16
         else:  # Run function in serial mode
-            # calculate_CM_transitions(
-            #     1, kpoints, red_energies, TrueBG,
-            #     Emin=Emin, Emax=Emax, save_kfile=save_kfile,
-            #     kfilename=kfilename, save_CMfile=save_CMfile,
-            #     cmfilename=CMfilename, etol=etol)
-            msg_error('\'run_combined\' can only be run parallel')
-            sys.exit()
+            calculate_CM_transitions(
+                1, kpoints, red_energies, TrueBG,
+                Emin=Emin, Emax=Emax, save_kfile=save_kfile,
+                kfilename=kfilename, save_CMfile=save_CMfile,
+                cmfilename=CMfilename, etol=etol)
+            # msg_error('\'run_combined\' can only be run parallel')
+            # sys.exit()
         end_time = time.time()
         log('CM transition calculations done!')
         runtime = end_time-start_time
