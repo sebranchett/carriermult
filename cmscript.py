@@ -646,6 +646,8 @@ def load_yambo_nc_file(yambo_dir, yambo_file):
         "calculating vector magnitudes.."
         )
 
+    # The Umklapp function needs the reciprocal lattice and its inverse
+    global reciprocal_lattice, reciprocal_lattice_inv
     reciprocal_lattice = lattice.rlat
     reciprocal_lattice_inv = np.linalg.inv(reciprocal_lattice)
     kpoints = np.zeros([nkpt, 4])
@@ -659,6 +661,14 @@ def load_yambo_nc_file(yambo_dir, yambo_file):
 
     # Expand the eigenvalues from the IBZ to the full BZ
     yambo.expandEigenvalues()
+
+    # The Yambo expansion of kpoints from the IBZ leads to
+    # not all kpoints in the first BZ
+    for i in range(kpoints.shape[0]):
+        kpoints[i, :3] = Umklapp(kpoints[i, :3])
+        # The magnitude of the k-vectors are calculated in order to speed
+        # up the find_ktransitions function
+        kpoints[i, 3] = np.sqrt(np.dot(kpoints[i, :3], kpoints[i, :3]))
 
     cbm = yambo.nbandsv
     max_valence_energy = np.max(yambo.eigenvalues[0, :, :cbm])
@@ -725,14 +735,6 @@ if __name__ == "__main__":      # This is needed if you want to import
         # Assume Yambo
         reciprocal_lattice, reciprocal_lattice_inv, \
             kpoints, energies = load_yambo_nc_file(yambo_dir, yambo_file)
-
-        # The Yambo expansion of kpoints from the IBZ leads to
-        # not all kpoints in the first BZ
-        for i in range(kpoints.shape[0]):
-            kpoints[i, :3] = Umklapp(kpoints[i, :3])
-            # The magnitude of the k-vectors are calculated in order to speed
-            # up the find_ktransitions function
-            kpoints[i, 3] = np.sqrt(np.dot(kpoints[i, :3], kpoints[i, :3]))
 
     #####
     # The following part limits the energy array to the values Emin and Emax
