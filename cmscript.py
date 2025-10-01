@@ -841,18 +841,18 @@ if __name__ == "__main__":      # This is needed if you want to import
                     cmfilename=CMfilename, etol=etol
                 ) for i in tqdm(kparralel))
             Ncm += sum(data)
-            if degenerate:
-                Ncm *= 16   # Each band is 2fold degenerate. We have 4 energy
-                #             levels that we compare
-                #             when finding CM transitions. 2*2*2*2 = 16
         else:  # Run function in serial mode
-            calculate_CM_transitions(
-                1, kpoints, red_energies, TrueBG,
+            Ncm += calculate_CM_transitions(
+                0, kpoints, red_energies, TrueBG,
                 Emin=Emin, Emax=Emax, save_kfile=save_kfile,
                 kfilename=kfilename, save_CMfile=save_CMfile,
                 cmfilename=CMfilename, etol=etol)
             # msg_error('\'run_combined\' can only be run parallel')
             # sys.exit()
+        if degenerate:
+            Ncm *= 16   # Each band is 2fold degenerate. We have 4 energy
+            #             levels that we compare
+            #             when finding CM transitions. 2*2*2*2 = 16
         end_time = time.time()
         log('CM transition calculations done!')
         runtime = end_time-start_time
