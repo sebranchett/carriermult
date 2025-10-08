@@ -42,9 +42,9 @@ def plot_BZ(bz_lattice, kpoints=None, ax=None, **kwargs):
 # Path to the directory containing the GSR.nc file and Ncm.csv file
 # path = "C:\\Users\\Sven\\OneDrive\\Studie\\Master\\Jaar 2\\Thesis\\
 # Python scripts\\Data\\MoTe2\\10x10x5_0.90eV_30Ha_Emin"
-# dirname = path[-path[::-1].index('\\'):]
-path = "C:\\Users\\sbranchett\\work\\sven"
-dirname = path[-path[::-1].index('\\'):]
+# dirname = prefix = path[-path[::-1].index('\\'):]
+path = r"."
+prefix = r"MoTe2_4x4x4"
 # Name of the GSR.nc file
 # abinit_file = path+"\\bulk_1o_GSR.nc"
 abinit_file = "MoTe2_4x4x4_1o_GSR.nc"
@@ -97,14 +97,6 @@ ksum = [sum(k) for k in Ncm]
 ksum = (ksum - min(ksum))
 ksum = ksum / max(ksum)
 
-# testing color map
-# x = np.linspace(0,1,len(cmap))
-# y = np.linspace(0,256,len(cmap))
-# for k in range(len(cmap)):
-#     plt.scatter(x[k], y[k], color=viridis(1.1))
-# print(max(cmap))
-# print(min(cmap))
-
 if top:
     fig, ax = pl.plot_lattice_vectors(bz_lattice, color='red')
     for k in range(len(kpoints)):
@@ -123,8 +115,8 @@ if top:
     )
     cbar.set_label(r'$N_{CM} \; / \; {n_k}^2$', fontsize=12)
     cbar.ax.tick_params(labelsize=12)
-    ax.text(0, 1.2, 1, dirname)
-    fig.savefig(dirname+"_top.png", dpi=300)
+    ax.text(0, 1.2, 1, prefix)
+    fig.savefig(prefix+"_top.png", dpi=300)
     plt.show()
 
 if side:
@@ -141,7 +133,7 @@ if side:
         label=r'$N_{CM} /; / /; {n_k}^2$'
     )
     cbar.set_label(r'$N_{CM} \; / \; {n_k}^2$', fontsize=12)
-    ax.text(-0.63, 0.8, 1.1, dirname)
+    ax.text(-0.63, 0.8, 1.1, prefix)
     ax.view_init(elev=43, azim=-75)
-    fig.savefig(dirname+"_side.png", dpi=300)
+    fig.savefig(prefix+"_side.png", dpi=300)
     plt.show()
