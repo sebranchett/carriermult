@@ -6,4 +6,5 @@ MoTe2/
 *.xlsx
 
 example_analysis/
+.ipynb_checkpoints/
 
