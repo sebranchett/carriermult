@@ -4,6 +4,8 @@ MoTe2/
 *.csv
 *.txt
 *.xlsx
+*_top.png
+*_side.png
 
 example_analysis/
 .ipynb_checkpoints/
