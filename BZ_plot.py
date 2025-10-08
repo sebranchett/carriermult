@@ -10,33 +10,7 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 import numpy as np
 import pymatgen.electronic_structure.plotter as pl
-
-
-def plot_BZ(bz_lattice, kpoints=None, ax=None, **kwargs):
-    import pymatgen.electronic_structure.plotter as pl
-    fig = None
-    if ax is None:
-        fig, ax = pl.plot_lattice_vectors(bz_lattice, ax=ax, color='red')
-        pl.plot_wigner_seitz(bz_lattice, ax=ax)
-    ax.set_xlim3d(-1, 1)
-    ax.set_ylim3d(-1, 1)
-    ax.set_zlim3d(-1, 1)
-
-    if kpoints is not None:
-        if kpoints.shape[0] > 4:
-            # print('multiple')
-            for k in kpoints:
-                x, y, z = k[:3]
-                ax.scatter(x, y, z, **kwargs)
-        else:
-            # print('single')
-            x, y, z = kpoints[:3]
-            ax.scatter(x, y, z, **kwargs)
-
-    # ax.set_aspect('equal')
-    ax.axis("off")
-
-    return fig
+from cmscript import plot_BZ
 
 
 # Path to the directory containing the GSR.nc file and Ncm.csv file
