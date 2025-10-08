@@ -91,7 +91,7 @@ Ncm = np.genfromtxt(path+"\\Ncm.csv", delimiter=',') / abinit.nkpt**2
 ksum = [sum(k) for k in Ncm]
 norm = cm.colors.Normalize(vmin=min(ksum), vmax=max(ksum))
 # norm = [np.amin(Ncm), np.amax(Ncm)]
-viridis = cm.get_cmap('viridis', 256)
+viridis = plt.colormaps["viridis"]
 
 ksum = [sum(k) for k in Ncm]
 ksum = (ksum - min(ksum))
