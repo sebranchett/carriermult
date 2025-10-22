@@ -8,7 +8,6 @@ Created on Wed Jan  5 19:20:18 2022
 import numpy as np
 
 
-# SEB abinit was abinit_file!!
 def generate_bxsf_file(filename, abinit, band_range=None):
     # modified from abipy iotools
     nband = abinit.nband

@@ -10,4 +10,5 @@ MoTe2/
 example_analysis/
 .ipynb_checkpoints/
 __pycache__/
+.virtual_documents/
 
