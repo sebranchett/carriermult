@@ -18,6 +18,7 @@ from yambopy import YamboElectronsDB, YamboLatticeDB
 import multiprocessing
 from tqdm import tqdm
 from joblib import Parallel, delayed
+import argparse
 
 
 ###############################################################################
@@ -32,13 +33,12 @@ run_CM_calculations = True          # Find CM transitions. If save_transitions
 # Location of the Abinit *GSR.nc file. This is the file that contains the
 # k-points,eigenvalues, etc
 # abinit_file = r'/home/svenw/example_cmscript/MoTe2_4x4x4_1o_GSR.nc'
-# abinit_file = r'./MoTe2_4x4x4_1o_GSR.nc'
 abinit_file = r''
 
 # If abinit_file is empty, Yambo is assumed.
 # Location of the Yambo SAVE directory and the ns.db1 file.
 # This is where Yambo stores the k-points and eigenvalues, etc.
-yambo_dir = r'./MoTe2/SAVE'
+yambo_dir = r'./SAVE'
 yambo_file = r'ns.db1'
 
 
@@ -696,6 +696,34 @@ def load_yambo_nc_file(yambo_dir, yambo_file):
 ###############################################################################
 if __name__ == "__main__":      # This is needed if you want to import
     #                         functions from this script to another python file
+    # Parse command-line arguments to optionally override input files
+    parser = argparse.ArgumentParser(
+        description=(
+            'Calculate carrier multiplication transitions from Abinit '
+            'or Quantum ESPRESSO/Yambo data.'
+        )
+    )
+    parser.add_argument(
+        '-a',
+        '--abinit',
+        help='Path to Abinit *GSR.nc file',
+        metavar='ABINIT_FILE'
+    )
+    parser.add_argument(
+        '-q',
+        '-qe',
+        '-y',
+        '--yambo',
+        help='Path to Quantum ESPRESSO/Yambo SAVE directory containing ns.db1',
+        metavar='YAMBO_DIR'
+    )
+    args = parser.parse_args()
+    if args.abinit:
+        abinit_file = args.abinit
+        log(f"Overriding abinit_file with command-line value: {abinit_file}")
+    if args.yambo:
+        yambo_dir = args.yambo
+        log(f"Overriding yambo_dir with command-line value: {yambo_dir}")
     if path.exists(logfilename):
         os.remove(logfilename)
     log('\n\n')
@@ -728,10 +756,22 @@ if __name__ == "__main__":      # This is needed if you want to import
     # ############## Load nc file ###############
     # if abinit file has been specified:
     if abinit_file:
+        # check abinit_file exists
+        if not path.exists(abinit_file):
+            msg_error(
+                f'Abinit file {abinit_file} not found. Please check path.'
+            )
+            sys.exit()
         reciprocal_lattice, reciprocal_lattice_inv, \
             kpoints, energies = load_abinit_nc_file(abinit_file)
     else:
-        # Assume Yambo
+        # check yambo_dir/yambo_file exists
+        yambo_file_path = path.join(yambo_dir, yambo_file)
+        if not path.exists(yambo_file_path):
+            msg_error(
+                f'Yambo file {yambo_file_path} not found. Please check path.'
+            )
+            sys.exit()
         reciprocal_lattice, reciprocal_lattice_inv, \
             kpoints, energies = load_yambo_nc_file(yambo_dir, yambo_file)
 
