@@ -14,12 +14,14 @@ If you use DelftBlue, please cite as described [here](https://doc.dhpc.tudelft.n
 A complete analysis consists of three steps:
 1. Perform a DFT calculation to obtain the band structure and wavefunctions
 2. Calculate the number of carrier multiplication transitions using the `cmscript.py` script
-3. Analyze the results using the `analysis.ipynb` Jupyter notebook
+3. Analyze the results starting from the `analysis.ipynb` Jupyter notebook
 
 In step 2, you will need to change the input parameters in `cmscript.py`. See the clearly marked section at the start of the script. If you only need to override the file locations, you can use the command line arguments:
 ```bash
 python cmscript.py --help
 ```
+
+In step 3, you will need to pay close attention to paths of input files and graph titles and labels. You will also need to provide experimental data for comparison.
 
 Depending on the size of your system, steps 1 and 2 can take a significant amount of time and are best performed on a computing cluster.
 The files `Ncm.csv` and `reduced_energies.csv` can then be transferred to your local machine for analysis in step 3.
