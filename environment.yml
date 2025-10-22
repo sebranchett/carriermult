@@ -1,0 +1,18 @@
+name: carriermult
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - abipy>=0.9.8
+  - ipykernel>=7.0.1
+  - nbdime>=4.0.2
+  - netcdf4>=1.7.2
+  - numpy>=1.26.4
+  - pip>=25.2
+  - python>=3.12.11
+  - scipy>=1.16.1
+  - pip:
+    - scikit-learn>=1.7.2
+    - threadpoolctl>=3.6.0
+    - yambopy>=0.4.6
+
