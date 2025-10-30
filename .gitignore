@@ -12,3 +12,11 @@ example_analysis/
 __pycache__/
 .virtual_documents/
 
+err
+log
+*.out
+*_DDB
+*_DEN
+*_EBANDS.agr
+*_EIG
+*_WFK
