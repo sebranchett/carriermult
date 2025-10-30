@@ -1,0 +1,45 @@
+&control
+    calculation   = 'scf',
+    prefix        = 'MoTe2',
+    wf_collect    = .true.,
+    pseudo_dir    = './',
+/
+
+&system
+    ibrav           = 0,
+    nat             = 6,
+    ntyp            = 2,
+    ecutwfc         = 60.0,
+    vdw_corr        = 'Grimme-D3'
+    nbnd            = 130,
+    noncolin        = .true.
+    lspinorb        = .true.
+    force_symmorphic  =.true.
+/
+
+&electrons
+    diago_full_acc  =.true.
+/
+
+&ions
+/
+
+ATOMIC_SPECIES
+    Mo 97.905406 'Mo_ONCV_PBE_FR-1.0.upf'
+    Te 127.60 'Te_ONCV_PBE_FR-1.1.upf'
+
+ATOMIC_POSITIONS crystal
+    Mo       0.33333333 0.66666667 0.25
+    Mo       0.66666667 0.33333333 0.75
+    Te       0.33333333 0.66666667 0.621000
+    Te       0.66666667 0.33333333 0.379000
+    Te       0.66666667 0.33333333 0.121000
+    Te       0.33333333 0.66666667 0.879000
+
+CELL_PARAMETERS bohr
+   3.3249731165 -5.759022  0.000000000
+   3.3249731165  5.759022  0.000000000
+   0.000000000   0.000000 26.38813513
+
+K_POINTS automatic
+  4 4 4 0 0 0
