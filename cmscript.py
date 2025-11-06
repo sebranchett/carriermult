@@ -240,14 +240,11 @@ def find_CM_transitions(krow, energies, BG, Emin, Emax, save_CMfile=True,
                 # Only consider full VB or full CB transitions. If electron
                 # goes from CB to VB then there is no CM).
                 continue
+            Eif_energy = Ei_energy - Ef_energy
             for Eii in valid_Eii:
-                Eii_energy = Eii_vals[Eii]
+                Eifii_energy = Eif_energy + Eii_vals[Eii]
                 for Eff in valid_Eff[::-1]:
-                    Eff_energy = Eff_vals[Eff]
-                    dE = (
-                        Ei_energy - Ef_energy +
-                        Eii_energy - Eff_energy
-                    )
+                    dE = Eifii_energy - Eff_vals[Eff]
                     if abs(dE) < etol:
                         # For CB the initial CM state is an electron
                         if Ei_energy > 0:
