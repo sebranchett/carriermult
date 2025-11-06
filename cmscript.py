@@ -20,6 +20,7 @@ from tqdm import tqdm
 from joblib import Parallel, delayed
 import argparse
 
+from line_profiler import profile
 
 ###############################################################################
 # INPUT - All the required input should be entered here
@@ -34,11 +35,12 @@ run_CM_calculations = True          # Find CM transitions. If save_transitions
 # k-points,eigenvalues, etc
 # abinit_file = r'/home/svenw/example_cmscript/MoTe2_4x4x4_1o_GSR.nc'
 abinit_file = r''
+abinit_file = r'./MoTe2_4x4x4_1o_GSR.nc'
 
 # If abinit_file is empty, Yambo is assumed.
 # Location of the Yambo SAVE directory and the ns.db1 file.
 # This is where Yambo stores the k-points and eigenvalues, etc.
-yambo_dir = r'./SAVE'
+yambo_dir = r'./MoTe2/SAVE'
 yambo_file = r'ns.db1'
 
 
@@ -211,6 +213,7 @@ def Umklapp(k):
     return k_new
 
 
+@profile
 def find_CM_transitions(krow, energies, BG, Emin, Emax, save_CMfile=True,
                         etol=0.1):
     Ncm = np.zeros(energies.shape)
@@ -222,9 +225,14 @@ def find_CM_transitions(krow, energies, BG, Emin, Emax, save_CMfile=True,
     # Filter Ei (initial state at ki)
     Ei_vals = energies[ki]
     valid_Ei = np.where((Ei_vals >= Emin) & (Ei_vals <= Emax))[0]
+    Eii_vals = energies[kii]
+    valid_Eii = np.where((Eii_vals <= 0))[0]
+    Ef_vals = energies[kf]
+    # valid depends on Ei, so will be defined later
+    Eff_vals = energies[kff]
+    valid_Eff = np.where((Eff_vals > 0))[0]
     for Ei in valid_Ei[::-1]:
         Ei_energy = Ei_vals[Ei]
-        Ef_vals = energies[kf]
         valid_Ef = np.where((Ef_vals > Emin) & (Ei_energy - Ef_vals >= BG))[0]
         for Ef in valid_Ef[::-1]:
             Ef_energy = Ef_vals[Ef]
@@ -232,22 +240,10 @@ def find_CM_transitions(krow, energies, BG, Emin, Emax, save_CMfile=True,
                 # Only consider full VB or full CB transitions. If electron
                 # goes from CB to VB then there is no CM).
                 continue
-            Eii_vals = energies[kii]
-            valid_Eii = np.where((Eii_vals <= 0))[0]
             for Eii in valid_Eii:
                 Eii_energy = Eii_vals[Eii]
-                # E_min = energies[ki,Ei] - energies[kf, Ef] +
-                # energies[kii,Eii] - etol
-                # E_max = energies[ki,Ei] - energies[kf, Ef] +
-                # energies[kii,Eii] + etol
-                Eff_vals = energies[kff]
-                valid_Eff = np.where((Eff_vals > 0))[0]
                 for Eff in valid_Eff[::-1]:
                     Eff_energy = Eff_vals[Eff]
-                    # if Eff > 0 and (energies[kff,Eff] - energies[kff,Eff-1]
-                    #     < 0.0001):
-                    # Do not include if energies are more or less the same
-                    #     continue
                     dE = (
                         Ei_energy - Ef_energy +
                         Eii_energy - Eff_energy
@@ -259,7 +255,7 @@ def find_CM_transitions(krow, energies, BG, Emin, Emax, save_CMfile=True,
                         # For a VB transition, the CM carrier is a hole and
                         # therefore we change the order of initial & final
                         # state
-                        if Ei_energy <= 0:
+                        else:  # if Ei_energy <= 0:
                             new_transition = [[kf, Ef, ki, Ei]]
                         Ncm[new_transition[0][0], new_transition[0][1]] += 1
                         if save_CMfile is True:
@@ -872,7 +868,7 @@ if __name__ == "__main__":      # This is needed if you want to import
         chunksize = 10000
         start_time = time.time()
 
-        if True:  # Run function in parallel mode
+        if False:  # Run function in parallel mode
             data = Parallel(n_jobs=num_cores)(
                 delayed(calculate_CM_transitions)(
                     i, kpoints, red_energies, TrueBG,
