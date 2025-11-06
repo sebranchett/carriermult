@@ -35,7 +35,7 @@ run_CM_calculations = True          # Find CM transitions. If save_transitions
 # k-points,eigenvalues, etc
 # abinit_file = r'/home/svenw/example_cmscript/MoTe2_4x4x4_1o_GSR.nc'
 abinit_file = r''
-abinit_file = r'./MoTe2_4x4x4_1o_GSR.nc'
+# abinit_file = r'./MoTe2_4x4x4_1o_GSR.nc'
 
 # If abinit_file is empty, Yambo is assumed.
 # Location of the Yambo SAVE directory and the ns.db1 file.
@@ -669,6 +669,7 @@ def load_yambo_nc_file(yambo_dir, yambo_file):
     max_valence_energy = np.max(yambo.eigenvalues[0, :, :cbm])
     min_conduction_energy = np.min(yambo.eigenvalues[0, :, cbm:])
     energies = yambo.eigenvalues[0, :, :] - max_valence_energy
+
     # sets VBM as 0
     # Since the BG is underestimated in DFT, a scissor operator is used to
     # shift the CB so that it matches with experimental data
@@ -682,6 +683,12 @@ def load_yambo_nc_file(yambo_dir, yambo_file):
     log()
 
     energies[:, cbm:] = energies[:, cbm:] + scissor
+
+    # Convert to single precision (float32) to save memory and time
+    energies = energies.astype(np.float32)
+    kpoints = kpoints.astype(np.float32)
+    reciprocal_lattice = reciprocal_lattice.astype(np.float32)
+    reciprocal_lattice_inv = reciprocal_lattice_inv.astype(np.float32)
 
     return reciprocal_lattice, reciprocal_lattice_inv, \
         kpoints, energies
@@ -749,7 +756,7 @@ if __name__ == "__main__":      # This is needed if you want to import
     log(f'Calculating with {multiprocessing.cpu_count()} cores')
     msg_title('END INPUT')
 
-    # ############## Load nc file ###############
+    # ############## Load dft file ###############
     # if abinit file has been specified:
     if abinit_file:
         # check abinit_file exists
@@ -770,7 +777,6 @@ if __name__ == "__main__":      # This is needed if you want to import
             sys.exit()
         reciprocal_lattice, reciprocal_lattice_inv, \
             kpoints, energies = load_yambo_nc_file(yambo_dir, yambo_file)
-
     #####
     # The following part limits the energy array to the values Emin and Emax
     nmin = 0
