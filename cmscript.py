@@ -20,7 +20,8 @@ from tqdm import tqdm
 from joblib import Parallel, delayed
 import argparse
 
-from line_profiler import profile
+# from line_profiler import profile
+# from memory_profiler import profile
 
 ###############################################################################
 # INPUT - All the required input should be entered here
@@ -162,11 +163,11 @@ def check_IBZ(kpoint):
                 return True
 
 
-def k2frac(kpoint):
+def k2frac(kpoint, reciprocal_lattice_inv):
     return np.dot(np.transpose(reciprocal_lattice_inv), kpoint[:3])
 
 
-def frac2k(kpoint):
+def frac2k(kpoint, reciprocal_lattice):
     return np.dot(np.transpose(reciprocal_lattice), kpoint[:3])
 
 
@@ -194,13 +195,13 @@ def e2red(bandindex):
         return (bandindex - usebands[0] - 1)//2
 
 
-def Umklapp(k):
+def Umklapp(k, reciprocal_lattice, reciprocal_lattice_inv):
     # I think this should work for all lattices, but I have not tested it for
     # anything other than hexagonal
     # Takes a kpoint (Cartesian coordinates) as input and converts that point
     # to a value within |0.5*reciprocal lattice vector|
     k_new = np.copy(k)
-    k_new = k2frac(k_new[:3])
+    k_new = k2frac(k_new[:3], reciprocal_lattice_inv)
 
     for i, kx in enumerate(k_new):
         if abs(kx) > 0.5:
@@ -209,11 +210,10 @@ def Umklapp(k):
         if abs(k_new[i] + 0.5) < 1E-6:
             k_new[i] = 0.5
 
-    k_new = frac2k(k_new)
+    k_new = frac2k(k_new, reciprocal_lattice)
     return k_new
 
 
-@profile
 def find_CM_transitions(krow, energies, BG, Emin, Emax, save_CMfile=True,
                         etol=0.1):
     Ncm = np.zeros(energies.shape)
@@ -281,7 +281,7 @@ def calculate_CM_transitions(
     for f in range(k_range):
         for ii in range(k_range):
             kff = kpoints[i, :] + kpoints[ii, :] - kpoints[f, :]
-            kff = Umklapp(kff)
+            kff = Umklapp(kff, reciprocal_lattice, reciprocal_lattice_inv)
             new_length = (kff[0]**2 + kff[1]**2 + kff[2]**2)**0.5
             kff = np.append(kff, new_length)
             under = kff[-1] - ktol
@@ -294,10 +294,13 @@ def calculate_CM_transitions(
             )
             if a[0].shape[0] == 0:
                 print(
-                    f'{k2frac(kpoints[i, :])} + {k2frac(kpoints[ii, :])} - '
-                    f'{k2frac(kpoints[f, :])} = {k2frac(kff)}'
+                    f'{k2frac(kpoints[i, :], reciprocal_lattice_inv)} + '
+                    f'{k2frac(kpoints[ii, :], reciprocal_lattice_inv)} - '
+                    f'{k2frac(kpoints[f, :], reciprocal_lattice_inv)} = '
+                    f'{k2frac(kff, reciprocal_lattice_inv)}'
                 )
-                # print(f'Mismatching k-point: {k2frac(kff)}\n')
+                # print(f'Mismatching k-point: {k2frac(
+                # kff, reciprocal_lattice_inv)}\n')
             for ff in a[0]:
                 # this may be improved with a np.find function. Find index of
                 # values between range
@@ -306,10 +309,13 @@ def calculate_CM_transitions(
                 if not (kpoints[ff, :3] - kff[:3] < 1E-6).all():
                     if ff == a[0][-1]:
                         print(
-                            f'{k2frac(kpoints[i, :])} + '
-                            f'{k2frac(kpoints[ii, :])} - '
-                            f'{k2frac(kpoints[f, :])} = '
-                            f'{k2frac(kff)}'
+                            f'{k2frac(kpoints[i, :], reciprocal_lattice_inv)}'
+                            f' + '
+                            f'{k2frac(kpoints[ii, :], reciprocal_lattice_inv)}'
+                            f' - '
+                            f'{k2frac(kpoints[f, :], reciprocal_lattice_inv)}'
+                            f' = '
+                            f'{k2frac(kff, reciprocal_lattice_inv)}'
                         )
                         print('Warning: No matching k value found')
                     continue
@@ -657,7 +663,9 @@ def load_yambo_nc_file(yambo_dir, yambo_file):
     # The Yambo expansion of kpoints from the IBZ leads to
     # not all kpoints in the first BZ
     for i in range(kpoints.shape[0]):
-        kpoints[i, :3] = Umklapp(kpoints[i, :3])
+        kpoints[i, :3] = Umklapp(
+            kpoints[i, :3], reciprocal_lattice, reciprocal_lattice_inv
+        )
         # The magnitude of the k-vectors are calculated in order to speed
         # up the find_ktransitions function
         kpoints[i, 3] = np.sqrt(np.dot(kpoints[i, :3], kpoints[i, :3]))
@@ -871,7 +879,7 @@ if __name__ == "__main__":      # This is needed if you want to import
         chunksize = 10000
         start_time = time.time()
 
-        if False:  # Run function in parallel mode
+        if True:  # Run function in parallel mode
             data = Parallel(n_jobs=num_cores)(
                 delayed(calculate_CM_transitions)(
                     i, kpoints, red_energies, TrueBG,
