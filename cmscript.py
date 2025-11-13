@@ -20,9 +20,6 @@ from tqdm import tqdm
 from joblib import Parallel, delayed
 import argparse
 
-# from line_profiler import profile
-# from memory_profiler import profile
-
 ###############################################################################
 # INPUT - All the required input should be entered here
 # Note: units are in eV. The script will convert Abinit data to eV
@@ -163,11 +160,11 @@ def check_IBZ(kpoint):
                 return True
 
 
-def k2frac(kpoint, reciprocal_lattice_inv):
+def k2frac(kpoint):
     return np.dot(np.transpose(reciprocal_lattice_inv), kpoint[:3])
 
 
-def frac2k(kpoint, reciprocal_lattice):
+def frac2k(kpoint):
     return np.dot(np.transpose(reciprocal_lattice), kpoint[:3])
 
 
@@ -195,13 +192,13 @@ def e2red(bandindex):
         return (bandindex - usebands[0] - 1)//2
 
 
-def Umklapp(k, reciprocal_lattice, reciprocal_lattice_inv):
+def Umklapp(k):
     # I think this should work for all lattices, but I have not tested it for
     # anything other than hexagonal
     # Takes a kpoint (Cartesian coordinates) as input and converts that point
     # to a value within |0.5*reciprocal lattice vector|
     k_new = np.copy(k)
-    k_new = k2frac(k_new[:3], reciprocal_lattice_inv)
+    k_new = k2frac(k_new[:3])
 
     for i, kx in enumerate(k_new):
         if abs(kx) > 0.5:
@@ -210,7 +207,7 @@ def Umklapp(k, reciprocal_lattice, reciprocal_lattice_inv):
         if abs(k_new[i] + 0.5) < 1E-6:
             k_new[i] = 0.5
 
-    k_new = frac2k(k_new, reciprocal_lattice)
+    k_new = frac2k(k_new)
     return k_new
 
 
@@ -281,7 +278,7 @@ def calculate_CM_transitions(
     for f in range(k_range):
         for ii in range(k_range):
             kff = kpoints[i, :] + kpoints[ii, :] - kpoints[f, :]
-            kff = Umklapp(kff, reciprocal_lattice, reciprocal_lattice_inv)
+            kff = Umklapp(kff)
             new_length = (kff[0]**2 + kff[1]**2 + kff[2]**2)**0.5
             kff = np.append(kff, new_length)
             under = kff[-1] - ktol
@@ -294,13 +291,10 @@ def calculate_CM_transitions(
             )
             if a[0].shape[0] == 0:
                 print(
-                    f'{k2frac(kpoints[i, :], reciprocal_lattice_inv)} + '
-                    f'{k2frac(kpoints[ii, :], reciprocal_lattice_inv)} - '
-                    f'{k2frac(kpoints[f, :], reciprocal_lattice_inv)} = '
-                    f'{k2frac(kff, reciprocal_lattice_inv)}'
+                    f'{k2frac(kpoints[i, :])} + {k2frac(kpoints[ii, :])} - '
+                    f'{k2frac(kpoints[f, :])} = {k2frac(kff)}'
                 )
-                # print(f'Mismatching k-point: {k2frac(
-                # kff, reciprocal_lattice_inv)}\n')
+                # print(f'Mismatching k-point: {k2frac(kff)}\n')
             for ff in a[0]:
                 # this may be improved with a np.find function. Find index of
                 # values between range
@@ -309,13 +303,10 @@ def calculate_CM_transitions(
                 if not (kpoints[ff, :3] - kff[:3] < 1E-6).all():
                     if ff == a[0][-1]:
                         print(
-                            f'{k2frac(kpoints[i, :], reciprocal_lattice_inv)}'
-                            f' + '
-                            f'{k2frac(kpoints[ii, :], reciprocal_lattice_inv)}'
-                            f' - '
-                            f'{k2frac(kpoints[f, :], reciprocal_lattice_inv)}'
-                            f' = '
-                            f'{k2frac(kff, reciprocal_lattice_inv)}'
+                            f'{k2frac(kpoints[i, :])} + '
+                            f'{k2frac(kpoints[ii, :])} - '
+                            f'{k2frac(kpoints[f, :])} = '
+                            f'{k2frac(kff)}'
                         )
                         print('Warning: No matching k value found')
                     continue
@@ -663,9 +654,7 @@ def load_yambo_nc_file(yambo_dir, yambo_file):
     # The Yambo expansion of kpoints from the IBZ leads to
     # not all kpoints in the first BZ
     for i in range(kpoints.shape[0]):
-        kpoints[i, :3] = Umklapp(
-            kpoints[i, :3], reciprocal_lattice, reciprocal_lattice_inv
-        )
+        kpoints[i, :3] = Umklapp(kpoints[i, :3])
         # The magnitude of the k-vectors are calculated in order to speed
         # up the find_ktransitions function
         kpoints[i, 3] = np.sqrt(np.dot(kpoints[i, :3], kpoints[i, :3]))
@@ -688,12 +677,8 @@ def load_yambo_nc_file(yambo_dir, yambo_file):
     log()
 
     energies[:, cbm:] = energies[:, cbm:] + scissor
-
-    # Convert to single precision (float32) to save memory and time
-    energies = energies.astype(np.float32)
-    kpoints = kpoints.astype(np.float32)
-    reciprocal_lattice = reciprocal_lattice.astype(np.float32)
-    reciprocal_lattice_inv = reciprocal_lattice_inv.astype(np.float32)
+    # Convert to np.float64 for faster results (up to 20x)
+    energies = energies.astype(np.float64, copy=False)
 
     return reciprocal_lattice, reciprocal_lattice_inv, \
         kpoints, energies
