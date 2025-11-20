@@ -38,9 +38,11 @@ abinit_file = r''
 # If abinit_file is empty, Yambo is assumed.
 # Location of the Yambo SAVE directory and the ns.db1 file.
 # This is where Yambo stores the k-points and eigenvalues, etc.
-yambo_dir = r'./MoTe2/SAVE'
+yambo_dir = r'./qe_example/MoTe2/SAVE'
 yambo_file = r'ns.db1'
-
+gw_dir = r'./qe_example/MoTe2/output/gwppa'  # Optional: Location of Yambo gwppa directory
+# gw_dir = r''  # Optional: Location of Yambo gwppa directory
+gw_file = r'ndb.QP'         # Optional: Name of the Yambo GW ndb.QP file
 
 # Experimental bandgap - This is used for the scissor operator
 TrueBG = 0.9
@@ -604,7 +606,8 @@ def load_abinit_nc_file(abinit_file):
         kpoints, energies
 
 
-def load_yambo_nc_file(yambo_dir, yambo_file):
+def load_yambo_nc_file(
+        yambo_dir, yambo_file='ns.db1', gw_dir='', gw_file='ndb.QP'):
     log()
     msg_title('INITIALIZING INPUT DATA')
     log()
@@ -616,9 +619,19 @@ def load_yambo_nc_file(yambo_dir, yambo_file):
     except FileNotFoundError:
         msg_error(
             'Yambo ns.db1 file cannot be loaded, '
-            'check given path for Yambo file'
+            'check given path and filename'
         )
         sys.exit()
+    if gw_dir != '':
+        try:
+            yambo = YamboElectronsDB.from_db_file(yambo_dir, yambo_file)
+            lattice = YamboLatticeDB.from_db_file(yambo_dir + "/" + yambo_file)
+        except FileNotFoundError:
+            msg_error(
+                'Yambo GW ndb.QP file cannot be loaded, '
+                'check given path and filename'
+            )
+            sys.exit()
 
     log("File loaded")
     nkpt = lattice.nkpoints
@@ -765,8 +778,17 @@ if __name__ == "__main__":      # This is needed if you want to import
                 f'Yambo file {yambo_file_path} not found. Please check path.'
             )
             sys.exit()
+        # if gw_dir and gw_file have been specified, check they exist
+        if gw_dir and gw_file:
+            if not path.exists(path.join(gw_dir, gw_file)):
+                msg_error(
+                    f'Yambo GW file {path.join(gw_dir, gw_file)} not found. '
+                    'Please check path.'
+                )
+                sys.exit()
         reciprocal_lattice, reciprocal_lattice_inv, \
-            kpoints, energies = load_yambo_nc_file(yambo_dir, yambo_file)
+            kpoints, energies = load_yambo_nc_file(
+                yambo_dir, yambo_file, gw_dir, gw_file)
     #####
     # The following part limits the energy array to the values Emin and Emax
     nmin = 0
