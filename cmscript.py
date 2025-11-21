@@ -14,7 +14,7 @@ import sys
 from datetime import datetime
 from datetime import timedelta
 from abipy.abilab import abiopen
-from yambopy import YamboElectronsDB, YamboLatticeDB
+from yambopy import YamboElectronsDB, YamboLatticeDB, YamboQPDB
 import multiprocessing
 from tqdm import tqdm
 from joblib import Parallel, delayed
@@ -40,7 +40,7 @@ abinit_file = r''
 # This is where Yambo stores the k-points and eigenvalues, etc.
 yambo_dir = r'./qe_example/MoTe2/SAVE'
 yambo_file = r'ns.db1'
-gw_dir = r'./qe_example/MoTe2/output/gwppa'  # Optional: Location of Yambo gwppa directory
+gw_dir = r'./qe_example/MoTe2/output/gwppa'  # Optional: Yambo gwppa directory
 # gw_dir = r''  # Optional: Location of Yambo gwppa directory
 gw_file = r'ndb.QP'         # Optional: Name of the Yambo GW ndb.QP file
 
@@ -616,6 +616,7 @@ def load_yambo_nc_file(
     try:
         yambo = YamboElectronsDB.from_db_file(yambo_dir, yambo_file)
         lattice = YamboLatticeDB.from_db_file(yambo_dir + "/" + yambo_file)
+        nbands = yambo.nbands
     except FileNotFoundError:
         msg_error(
             'Yambo ns.db1 file cannot be loaded, '
@@ -624,8 +625,12 @@ def load_yambo_nc_file(
         sys.exit()
     if gw_dir != '':
         try:
-            yambo = YamboElectronsDB.from_db_file(yambo_dir, yambo_file)
-            lattice = YamboLatticeDB.from_db_file(yambo_dir + "/" + yambo_file)
+            ydb = YamboQPDB.from_db(folder=gw_dir, filename=gw_file)
+            # energies_dft = ydb.expand_eigenvalues(
+            #     lattice=lattice, data=ydb.eigenvalues_dft)
+            energies_qp = ydb.expand_eigenvalues(
+                lattice=lattice, data=ydb.eigenvalues_qp)
+            nbands = ydb.nbands
         except FileNotFoundError:
             msg_error(
                 'Yambo GW ndb.QP file cannot be loaded, '
@@ -635,7 +640,7 @@ def load_yambo_nc_file(
 
     log("File loaded")
     nkpt = lattice.nkpoints
-    info = [nkpt, yambo.nbands]
+    info = [nkpt, nbands]
     log("k-points: {} \nBands: {}".format(*info))
     log()
 
