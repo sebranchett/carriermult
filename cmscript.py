@@ -19,71 +19,7 @@ import multiprocessing
 from tqdm import tqdm
 from joblib import Parallel, delayed
 import argparse
-
-###############################################################################
-# INPUT - All the required input should be entered here
-# Note: units are in eV. The script will convert Abinit data to eV
-###############################################################################
-# Which calculations should be run? True or False.
-run_CM_calculations = True          # Find CM transitions. If save_transitions
-#                                     is True, the found transitions will be
-#                                     saved in a .csv file
-
-# Location of the Abinit *GSR.nc file. This is the file that contains the
-# k-points,eigenvalues, etc
-# abinit_file = r'/home/svenw/example_cmscript/MoTe2_4x4x4_1o_GSR.nc'
-abinit_file = r''
-# abinit_file = r'./MoTe2_4x4x4_1o_GSR.nc'
-
-# If abinit_file is empty, Yambo is assumed.
-# Location of the Yambo SAVE directory and the ns.db1 file.
-# This is where Yambo stores the k-points and eigenvalues, etc.
-yambo_dir = r'./qe_example/MoTe2/SAVE'
-yambo_file = r'ns.db1'
-gw_dir = r'./qe_example/MoTe2/output/gwppa'  # Optional: Yambo gwppa directory
-# gw_dir = r''  # Optional: Location of Yambo gwppa directory
-gw_file = r'ndb.QP'         # Optional: Name of the Yambo GW ndb.QP file
-
-# Experimental bandgap - This is used for the scissor operator
-TrueBG = 0.9
-
-# This is the maximum photon energy that will be considered. Note that large
-# values increase computation time.
-# The maximum conduction band will be determined by this value and the minimum
-# valence band will be determined with:
-# Emin = Emax - TrueBG
-Emax = 4
-
-# Tolerance energy difference. This parameter should be studied in a
-# convergence study
-etol = 0.01                 # float; default 0.01; This value represents the
-#                             maximum allowed error in energy difference
-#                             (E1f - E1i + Eii - Eff < etol)
-#                             Can be set to a typical phonon energy
-#                             Note: the error tolerance for momentum
-#                             conservation is 1E-6 which was tested and found
-#                             to be a good tolerance
-
-logfilename = 'log.txt'     # String; default 'log.txt'; Defines the name of
-#                             the log file
-save_kfile = False          # Boolean; default False; Save the entire array of
-#                             kpoints as a csv file or not.
-save_CMfile = False         # Boolean; default False; Save the entire array of
-#                             CM transitions as a csv file or not.
-#                             Note that saving the CM file is needed in order
-#                             to run_transition_density
-
-# If save_kfile or save_CMfile is True, define the filenames:
-kfilename = 'k_transitions.csv'
-CMfilename = 'CM_initial_states_8x8x4_0.85eV.csv'
-###############################################################################
-remove_degenerate = True    # Boolean; default True; Removes degenerate energy
-#                             bands from calculations. This saves computation
-#                             time
-###############################################################################
-# END INPUT - All input is defined above. Below is the code that will be
-#                             executed
-###############################################################################
+import yaml
 
 ###############################################################################
 # Function definitions
@@ -719,26 +655,32 @@ if __name__ == "__main__":      # This is needed if you want to import
         )
     )
     parser.add_argument(
-        '-a',
-        '--abinit',
-        help='Path to Abinit *GSR.nc file',
-        metavar='ABINIT_FILE'
-    )
-    parser.add_argument(
-        '-q',
-        '-qe',
-        '-y',
-        '--yambo',
-        help='Path to Quantum ESPRESSO/Yambo SAVE directory containing ns.db1',
-        metavar='YAMBO_DIR'
+        '-f',
+        '--file',
+        help='Path to yaml file containing input parameters',
+        metavar='INPUT_FILE',
+        default='cm_input.yaml',
     )
     args = parser.parse_args()
-    if args.abinit:
-        abinit_file = args.abinit
-        log(f"Overriding abinit_file with command-line value: {abinit_file}")
-    if args.yambo:
-        yambo_dir = args.yambo
-        log(f"Overriding yambo_dir with command-line value: {yambo_dir}")
+    # Read input from yaml file
+    with open(args.file, 'r') as infile:
+        input_data = yaml.safe_load(infile)
+    abinit_file = input_data.get('abinit_file', '')
+    yambo_dir = input_data.get('yambo_dir', '')
+    yambo_file = input_data.get('yambo_file', 'ns.db1')
+    gw_dir = input_data.get('gw_dir', '')
+    gw_file = input_data.get('gw_file', 'ndb.QP')
+    TrueBG = input_data.get('TrueBG', 0.9)  # eV
+    Emax = input_data.get('Emax', 4.0)  # eV
+    etol = input_data.get('etol', 0.01)  # eV
+    run_CM_calculations = input_data.get('run_CM_calculations', True)
+    save_kfile = input_data.get('save_kfile', True)
+    kfilename = input_data.get('kfilename', 'k_transitions.csv')
+    save_CMfile = input_data.get('save_CMfile', True)
+    CMfilename = input_data.get('CMfilename', 'CM_transitions.csv')
+    remove_degenerate = input_data.get('remove_degenerate', False)
+    logfilename = input_data.get('logfilename', 'cm_logfile.log')
+
     if path.exists(logfilename):
         os.remove(logfilename)
     log('\n\n')
