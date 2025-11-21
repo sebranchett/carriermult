@@ -7,19 +7,16 @@ Please see Sven's excellent [documentation](./cmscript_manual.md).
 If you use this code in your research, please cite the following publication:
 [New Theoretical Model to Describe Carrier Multiplication in Semiconductors: Explanation of Disparate Efficiency in MoTe<sub>2</sub> versus PbS and PbSe.](https://doi.org/10.1021/acs.jpcc.4c00383)
 
-Sven's work has been extended here to read input from Quantum ESPRESSO (as an alternative to ABINIT) and an example of using the code on [DelftBlue](https://www.tudelft.nl/dhpc/system) is provided.
+Sven's work has been extended here to read DFT input from [Quantum ESPRESSO](https://www.quantum-espresso.org/), via [Yambo](https://www.yambo-code.eu/), as an alternative to ABINIT. You can also read in Yambo GW data. An example of using the code on [DelftBlue](https://www.tudelft.nl/dhpc/system) is provided.
 If you use DelftBlue, please cite as described [here](https://doc.dhpc.tudelft.nl/delftblue/Citing-DHPC/).
 
 ## Usage
 A complete analysis consists of three steps:
-1. Perform a DFT calculation to obtain the band structure and wavefunctions
+1. Perform a DFT calculation to obtain the band structure and wavefunctions. Optionally, perform a GW calculation
 2. Calculate the number of carrier multiplication transitions using the `cmscript.py` script
 3. Analyze the results starting from the `analysis.ipynb` Jupyter notebook
 
-In step 2, you will need to change the input parameters in `cmscript.py`. See the clearly marked section at the start of the script. If you only need to override the file locations, you can use the command line arguments:
-```bash
-python cmscript.py --help
-```
+In step 2, you will need to provide the input parameters in the file `cm_input.yaml`.
 
 In step 3, you will need to pay close attention to paths of input files and graph titles and labels. You will also need to provide experimental data for comparison.
 

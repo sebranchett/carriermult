@@ -1,0 +1,64 @@
+###############################################################################
+# INPUT - All the required input should be entered here
+# Note: units are in eV. The script will convert Abinit data to eV
+###############################################################################
+# Which calculations should be run? True or False.
+run_CM_calculations: True          # Find CM transitions. If save_transitions
+#                                    is True, the found transitions will be
+#                                    saved in a .csv file
+
+# Location of the Abinit *GSR.nc file. This is the file that contains the
+# k-points,eigenvalues, etc
+# abinit_file: ''
+abinit_file: './bulk_1o_GSR.nc'
+
+# If abinit_file is empty, Yambo is assumed.
+# Location of the Yambo SAVE directory and the ns.db1 file.
+# This is where Yambo stores the k-points and DFT eigenvalues, etc.
+yambo_dir: './qe_example/MoTe2/SAVE'
+yambo_file: 'ns.db1'
+
+# Location of the Yambo GW directory and the ndb.QP file.
+# This is optional.
+# If provided, the yambo_dir and yambo_file are also required, for
+# lattice and band index information.
+gw_dir: ''  # Optional: Yambo gw directory
+# gw_dir: './qe_example/MoTe2/output/gwppa'  # Optional: Yambo gw directory
+gw_file: 'ndb.QP'  # Optional: Name of the Yambo GW ndb.QP file
+
+# Experimental bandgap - This is used for the scissor operator
+TrueBG: 0.9
+
+# This is the maximum photon energy that will be considered. Note that large
+# values increase computation time.
+# The maximum conduction band will be determined by this value and the minimum
+# valence band will be determined with:
+# Emin = Emax - TrueBG
+Emax: 4
+
+# Tolerance energy difference. This parameter should be studied in a
+# convergence study
+etol: 0.01                 # float; default 0.01; This value represents the
+#                            maximum allowed error in energy difference
+#                            (E1f - E1i + Eii - Eff < etol)
+#                            Can be set to a typical phonon energy
+#                            Note: the error tolerance for momentum
+#                            conservation is 1E-6 which was tested and found
+#                            to be a good tolerance
+
+logfilename: 'log.txt'     # String; default 'log.txt'; Defines the name of
+#                            the log file
+save_kfile: False          # Boolean; default False; Save the entire array of
+#                            kpoints as a csv file or not.
+save_CMfile: False         # Boolean; default False; Save the entire array of
+#                            CM transitions as a csv file or not.
+#                            Note that saving the CM file is needed in order
+#                            to run_transition_density
+
+# If save_kfile or save_CMfile is True, define the filenames:
+kfilename: 'k_transitions.csv'
+CMfilename: 'CM_initial_states_8x8x4_0.85eV.csv'
+###############################################################################
+remove_degenerate: True    # Boolean; default True; Removes degenerate energy
+#                            bands from calculations. This saves computation
+#                            time

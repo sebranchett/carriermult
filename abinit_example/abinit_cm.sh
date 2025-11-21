@@ -16,7 +16,7 @@ conda activate carriermult
 
 date
 
-srun python ../cmscript.py -a bulk_1o_GSR.nc
+srun python ../cmscript.py
 
 date
 conda deactivate

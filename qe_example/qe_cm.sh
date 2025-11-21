@@ -16,7 +16,7 @@ conda activate carriermult
 
 date
 
-srun python ../cmscript.py -qe MoTe2/SAVE/
+srun python ../cmscript.py
 
 date
 conda deactivate
