@@ -590,10 +590,10 @@ def load_abinit_nc_file(abinit_file):
     # sets VBM as 0 and converts to energies to eV
     # Since the BG is underestimated in DFT, a scissor operator is used to
     # shift the CB so that it matches with experimental data
-    DFT_BG = abinit.fundamental_gaps[0].energy
-    scissor = TrueBG - DFT_BG
+    CALC_BG = abinit.fundamental_gaps[0].energy
+    scissor = TrueBG - CALC_BG
     log('Scissor operation:')
-    log(f'Calculated bandgap: {DFT_BG} eV')
+    log(f'Calculated bandgap: {CALC_BG} eV')
     log(f'Experimental bandgap: {TrueBG} eV')
     log(f'Shifting CB with: {scissor:1.6f} eV')
     log('Please check if the calculated bandgap is indeed in eV.')
@@ -626,10 +626,6 @@ def load_yambo_nc_file(
     if gw_dir != '':
         try:
             ydb = YamboQPDB.from_db(folder=gw_dir, filename=gw_file)
-            # energies_dft = ydb.expand_eigenvalues(
-            #     lattice=lattice, data=ydb.eigenvalues_dft)
-            energies_qp = ydb.expand_eigenvalues(
-                lattice=lattice, data=ydb.eigenvalues_qp)
             nbands = ydb.nbands
         except FileNotFoundError:
             msg_error(
@@ -659,15 +655,6 @@ def load_yambo_nc_file(
     reciprocal_lattice_inv = np.linalg.inv(reciprocal_lattice)
     kpoints = np.zeros([nkpt, 4])
     kpoints[:, :3] = lattice.car_kpoints
-    log("Done\n")
-
-    #   ############################################
-
-    #   ############# gather eigenvalues ###########
-    log("Gathering energies..")
-
-    # Expand the eigenvalues from the IBZ to the full BZ
-    yambo.expandEigenvalues()
 
     # The Yambo expansion of kpoints from the IBZ leads to
     # not all kpoints in the first BZ
@@ -677,26 +664,43 @@ def load_yambo_nc_file(
         # up the find_ktransitions function
         kpoints[i, 3] = np.sqrt(np.dot(kpoints[i, :3], kpoints[i, :3]))
 
-    cbm = yambo.nbandsv
-    max_valence_energy = np.max(yambo.eigenvalues[0, :, :cbm])
-    min_conduction_energy = np.min(yambo.eigenvalues[0, :, cbm:])
-    energies = yambo.eigenvalues[0, :, :] - max_valence_energy
+    log("Done\n")
 
+    #   ############################################
+
+    #   ############# gather eigenvalues ###########
+    log("Gathering energies..")
+
+    # Expand the eigenvalues from the IBZ to the full BZ
+    yambo.expandEigenvalues()
+    cbm = yambo.nbandsv
+
+    if not gw_dir:
+        # Convert to np.float64 for faster results
+        energies = (yambo.eigenvalues[0, :, :]).astype(np.float64, copy=False)
+    else:
+        cbm = cbm-ydb.min_band+1  # Not all bands are calculated in GW
+        # energies = ydb.expand_eigenvalues(
+        #     lattice=lattice, data=ydb.eigenvalues_dft)
+        energies = ydb.expand_eigenvalues(
+            lattice=lattice, data=ydb.eigenvalues_qp)
+
+    max_valence_energy = np.max(energies[:, :cbm])
+    min_conduction_energy = np.min(energies[:, cbm:])
     # sets VBM as 0
     # Since the BG is underestimated in DFT, a scissor operator is used to
     # shift the CB so that it matches with experimental data
-    DFT_BG = min_conduction_energy - max_valence_energy
-    scissor = TrueBG - DFT_BG
+    energies = energies - max_valence_energy
+    CALC_BG = min_conduction_energy - max_valence_energy
+    scissor = TrueBG - CALC_BG
     log('Scissor operation:')
-    log(f'Calculated bandgap: {DFT_BG} eV')
+    log(f'Calculated bandgap: {CALC_BG} eV')
     log(f'Experimental bandgap: {TrueBG} eV')
     log(f'Shifting CB with: {scissor:1.6f} eV')
     log('Please check if the calculated bandgap is indeed in eV.')
     log()
 
     energies[:, cbm:] = energies[:, cbm:] + scissor
-    # Convert to np.float64 for faster results (up to 20x)
-    energies = energies.astype(np.float64, copy=False)
 
     return reciprocal_lattice, reciprocal_lattice_inv, \
         kpoints, energies
