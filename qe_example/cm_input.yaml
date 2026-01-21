@@ -19,26 +19,26 @@ yambo_dir: './MoTe2/SAVE'
 yambo_file: 'ns.db1'
 
 # Location of the Yambo GW directory and the ndb.QP file.
-# This is optional.
+# This is optional and is not used if gw_dir is not provided.
 # If provided, the yambo_dir and yambo_file are also required, for
 # lattice and band index information.
 gw_dir: ''  # Optional: Yambo gw directory
 # gw_dir: './MoTe2/output/gwppa'  # Optional: Yambo gw directory
 gw_file: 'ndb.QP'  # Optional: Name of the Yambo GW ndb.QP file
 
-# Experimental bandgap - This is used for the scissor operator
-TrueBG: 0.9
+# Experimental bandgap - This is used to obtain the scissor operator value
+TrueBG: 0.9  # eV
 
 # This is the maximum photon energy that will be considered. Note that large
 # values increase computation time.
 # The maximum conduction band will be determined by this value and the minimum
 # valence band will be determined with:
 # Emin = Emax - TrueBG
-Emax: 4
+Emax: 4  # eV
 
 # Tolerance energy difference. This parameter should be studied in a
 # convergence study
-etol: 0.01                 # float; default 0.01; This value represents the
+etol: 0.01                 # eV float; default 0.01; This value represents the
 #                            maximum allowed error in energy difference
 #                            (E1f - E1i + Eii - Eff < etol)
 #                            Can be set to a typical phonon energy

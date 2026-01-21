@@ -25,11 +25,10 @@ cd "$WORKDIR"
 prefix=$(grep prefix scf.in | awk '{print $3}' | tr -d '[:punct:]')
 
 # DFT with Quantum Espresso
-# parameters to converge in combination with GW/BSE: ecutwfc, nbnd, K_POINTS
+# parameters to converge in combination with GW/BSE: ecutwfc, K_POINTS and, for GW, nbnd 
 mkdir -p output
 # scf
 srun pw.x < scf.in > output/scf.out
-# #SBATCH --mail-type=ALL
 
 # Convert Quantum Espresso output to Yambo input
 cd ${prefix}.save
@@ -40,7 +39,6 @@ cp -rf ${prefix}.save/SAVE SAVE
 
 # Create initialisation file (init.in) for Yambo and run the initialisation
 rm -f init.in
-yambo -i -V RL -F init.in  # this creates the input file
+yambo -i -V RL -F init.in  # this creates the input file, with data from SAVE/
 srun yambo -F init.in -J output/init  # this runs the initialisation
 # Yambo report at output/r-init_setup
-

@@ -12,7 +12,7 @@ If you use DelftBlue, please cite as described [here](https://doc.dhpc.tudelft.n
 
 ## Usage
 A complete analysis consists of three steps:
-1. Perform a DFT calculation to obtain the band structure and wavefunctions. Optionally, perform a GW calculation
+1. Perform a DFT calculation to obtain the band structure in the full Brillouin zone. Optionally, perform a GW calculation
 2. Calculate the number of carrier multiplication transitions using the `cmscript.py` script
 3. Analyze the results starting from the `analysis.ipynb` Jupyter notebook
 
