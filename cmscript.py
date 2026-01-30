@@ -312,45 +312,6 @@ def read_CM_states(CMfilename, energies):
                 Ncm[ki, ni] += 1
 
 
-def find_photon_energies(
-    transition, energies, Emax=4, nvb=None, ncb=None, max_photons=5,
-    etol=0.0001
-):
-    k, n = int(transition[0]), int(transition[1])
-    Ei = energies[k, n]
-
-    CB_photons, VB_photons = np.zeros([0, 1]), np.zeros([0, 1])
-
-    if Ei > 0:  # CB transitions
-        for ix, E in enumerate(reversed(energies[k, :ncb])):  # iterate over
-            #                                           all VB energies at k
-            # if E > 0:
-            #     continue
-            Ephoton = Ei - E
-            if Ephoton > 4:
-                break
-            CB_photons = np.append(CB_photons, np.array([[Ephoton]]), axis=0)
-            # save photon energy in first col
-
-    if Ei <= 0:  # VB transitions
-        for ix, E in enumerate((energies[k, ncb:])):
-            # iterate over all VB energies at k
-            # if E <= 0:
-            #     continue
-            Ephoton = E - Ei
-            if Ephoton > 4:
-                break
-            VB_photons = np.append(VB_photons, np.array([[Ephoton]]), axis=0)
-            # save photon energy in second col
-
-    if type(n) is not int:
-        n = min(np.where(abs(energies[k, :] - Ei) < etol)[0])
-
-    # nphotons = len(photons)
-    # state = [k,n]
-    return CB_photons, VB_photons
-
-
 def plot_BZ(bz_lattice, kpoints=None, ax=None, **kwargs):
     import pymatgen.electronic_structure.plotter as pl
     fig = None
@@ -379,7 +340,7 @@ def plot_BZ(bz_lattice, kpoints=None, ax=None, **kwargs):
 
 
 def find_CMcount(
-    energies, Ncm, BG, Emax=4, dE=0.01, degenerate=True, averaging=False
+    energies, Ncm, Emax=4, dE=0.01, degenerate=True, averaging=False
 ):
     # returns array with
     # col0: photon energy that will produce electron-hole pair
@@ -670,15 +631,15 @@ if __name__ == "__main__":      # This is needed if you want to import
     yambo_file = input_data.get('yambo_file', 'ns.db1')
     gw_dir = input_data.get('gw_dir', '')
     gw_file = input_data.get('gw_file', 'ndb.QP')
-    TrueBG = input_data.get('TrueBG', 0.9)  # eV
-    Emax = input_data.get('Emax', 4.0)  # eV
-    etol = input_data.get('etol', 0.01)  # eV
+    TrueBG = input_data.get('TrueBG')  # eV
+    Emax = input_data.get('Emax')  # eV
+    etol = input_data.get('etol')  # eV
     run_CM_calculations = input_data.get('run_CM_calculations', True)
-    save_kfile = input_data.get('save_kfile', True)
+    save_kfile = input_data.get('save_kfile', False)
     kfilename = input_data.get('kfilename', 'k_transitions.csv')
-    save_CMfile = input_data.get('save_CMfile', True)
+    save_CMfile = input_data.get('save_CMfile', False)
     CMfilename = input_data.get('CMfilename', 'CM_transitions.csv')
-    remove_degenerate = input_data.get('remove_degenerate', False)
+    remove_degenerate = input_data.get('remove_degenerate', True)
     logfilename = input_data.get('logfilename', 'cm_logfile.log')
 
     if path.exists(logfilename):
@@ -776,13 +737,15 @@ if __name__ == "__main__":      # This is needed if you want to import
         degenerate = True
         for i, Ek in enumerate(red_energies):
             for j, Ekn in enumerate(Ek):
-                if j == 0:
+                # if j is even, save energy, if odd compare to previous j
+                if j % 2 == 0:
+                    prev_energy = Ekn
                     continue
-                if Ekn - Ekn > 0.0001:
-                    degenerate = False
-                    log("Some energies are found to be non-degenerate")
-                if not degenerate:
-                    break
+                else:
+                    if Ekn - prev_energy > 0.0001:
+                        degenerate = False
+                        log("Some energies are found to be non-degenerate")
+                        break
             if not degenerate:
                 break
 
