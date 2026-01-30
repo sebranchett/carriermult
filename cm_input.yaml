@@ -9,8 +9,8 @@ run_CM_calculations: True          # Find CM transitions. If save_transitions
 
 # Location of the Abinit *GSR.nc file. This is the file that contains the
 # k-points,eigenvalues, etc
-# abinit_file: ''
-abinit_file: './MoTe2_4x4x4_1o_GSR.nc'
+abinit_file: ''
+# abinit_file: './MoTe2_4x4x4_1o_GSR.nc'
 
 # If abinit_file is empty, Yambo is assumed.
 # Location of the Yambo SAVE directory and the ns.db1 file.
@@ -26,7 +26,7 @@ gw_dir: ''  # Optional: Yambo gw directory
 # gw_dir: './qe_example/MoTe2/output/gwppa'  # Optional: Yambo gw directory
 gw_file: 'ndb.QP'  # Optional: Name of the Yambo GW ndb.QP file
 
-# Experimental bandgap - This is used for the scissor operator
+# Experimental bandgap or bandgap from GW - This is used for the scissor operator
 TrueBG: 0.9
 
 # This is the maximum photon energy that will be considered. Note that large
