@@ -24,7 +24,7 @@ Depending on the size of your system, steps 1 and 2 can take a significant amoun
 The files `Ncm.csv` and `reduced_energies.csv` can then be transferred to your local machine for analysis in step 3.
 
 ## Installation
-The Python code has a number of dependencies, which can be installed with [Conda](https://docs.conda.io/en/latest/).
+The Python code has a number of dependencies, which can be installed with [miniconda](https://docs.conda.io/en/latest/). Make sure you have miniconda on both your laptop and on DelftBlue, see the [DelftBlue Documentation](https://doc.dhpc.tudelft.nl/delftblue/howtos/conda/).
 ```bash
 conda env create -f environment.yml
 ```
