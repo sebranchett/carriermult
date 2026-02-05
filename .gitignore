@@ -6,6 +6,7 @@ MoTe2/
 *.xlsx
 *_top.png
 *_side.png
+0*.png
 
 example_analysis/
 .ipynb_checkpoints/
