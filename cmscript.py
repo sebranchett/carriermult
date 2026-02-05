@@ -346,6 +346,7 @@ def find_CMcount(
     # col0: photon energy that will produce electron-hole pair
     # col1: # primary electron CM transitions
     # col2: # primary hole CM transitions
+    factor = 1
     if degenerate:
         factor = 2  # This is needed because Ncm was accounted for degeneracy
         #             by multiplying with 16
