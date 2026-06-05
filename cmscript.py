@@ -591,6 +591,15 @@ def load_yambo_nc_file(
         energies = ydb.expand_eigenvalues(
             lattice=lattice, data=ydb.eigenvalues_qp)
 
+    # If the the length of the kpoints and energies do not match,
+    # there is an error in the expansion of the eigenvalues.
+    if kpoints.shape[0] != energies.shape[0]:
+        msg_error(
+            f"K-point mismatch: {kpoints.shape[0]} k-points, "
+            f"but energies found at {energies.shape[0]} k-points"
+        )
+        sys.exit()
+
     max_valence_energy = np.max(energies[:, :cbm]) # the VBM is the maximum energy of the valence bands, which is the band just before the CBM, so we take all energies up to cbm (not including cbm) and find the maximum energy among those bands
     min_conduction_energy = np.min(energies[:, cbm:]) # the CBM is the minimum energy of the conduction bands, which is the band just after the VBM, so we take all energies from cbm and above and find the minimum energy among those bands
     
