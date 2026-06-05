@@ -574,12 +574,18 @@ def load_yambo_nc_file(
     yambo.expandEigenvalues()
 
     if defects is False:
-        cbm = yambo.nbandsv # the cbm index is the number of valence bands since in python the indexing starts at 0
+        cbm = yambo.nbandsv  # the cbm index is the number of valence bands
+        # since in python the indexing starts at 0
     else:
         if occupy_unoccupied_defect_bands is True:
-            cbm = yambo.nbandsv + num_unoccupied_defect_bands # the cbm index is the number of valence bands plus the number of unoccupied defect bands since we consider them as occupied and therefore we want to shift them down together with the valence band
+            cbm = yambo.nbandsv + num_unoccupied_defect_bands  # the cbm index
+            # is the number of valence bands plus the number of unoccupied
+            # defect bands since we consider them as occupied and therefore
+            # we want to shift them down together with the valence band
         else:
-            cbm = yambo.nbandsv # the cbm index is the number of valence bands since the occupied defect bands are already included in the valence bands
+            cbm = yambo.nbandsv  # the cbm index is the number of valence
+            # bands since the occupied defect bands are already included in
+            # the valence bands
 
     if not gw_dir:
         # Convert to np.float64 for faster results
@@ -600,15 +606,22 @@ def load_yambo_nc_file(
         )
         sys.exit()
 
-    max_valence_energy = np.max(energies[:, :cbm]) # the VBM is the maximum energy of the valence bands, which is the band just before the CBM, so we take all energies up to cbm (not including cbm) and find the maximum energy among those bands
-    min_conduction_energy = np.min(energies[:, cbm:]) # the CBM is the minimum energy of the conduction bands, which is the band just after the VBM, so we take all energies from cbm and above and find the minimum energy among those bands
-    
-    energies = energies - max_valence_energy # sets VBM as 0
+    max_valence_energy = np.max(energies[:, :cbm])  # the VBM is the maximum
+    # energy of the valence bands, which is the band just before the CBM, so
+    # we take all energies up to cbm (not including cbm) and find the maximum
+    # energy among those bands
+    min_conduction_energy = np.min(energies[:, cbm:])  # the CBM is the minimum
+    # energy of the conduction bands, which is the band just after the VBM, so
+    # we take all energies from cbm and above and find the minimum energy among
+    # those bands
+
+    energies = energies - max_valence_energy  # sets VBM as 0
 
     # Since the BG is underestimated in DFT, a scissor operator is used to
     # shift the CB so that it matches with experimental data
     if defects is False:
-        # If defects are not included, we simply apply a scissor to the CBM and above, so that the bandgap matches with the experimental bandgap
+        # If defects are not included, we simply apply a scissor to the CBM
+        # and above, so that the bandgap matches with the experimental bandgap
         CALC_BG = min_conduction_energy - max_valence_energy
         scissor = TrueBG - CALC_BG
         log('Scissor operation:')
@@ -618,37 +631,118 @@ def load_yambo_nc_file(
         log('Please check if the calculated bandgap is indeed in eV.')
         log()
         energies[:, cbm:] = energies[:, cbm:] + scissor
-        CM_BG = TrueBG # the bandgap considered for the CM calculations is the experimental bandgap of the pristine material, since there are no defects in this case
-        # If defects are included, we assume that the occupied defect states are already
-        # correctly positioned in the bandgap, but the unoccupied defect states are not. 
-        # Therefore, we apply a scissor to the CBM and above, including the unoccupied defect states, i.e. that the initially occupied states are kept at the same energy difference with respect to the VBM, and the initially unoccupied states are kept at the same energy difference with respect to the CBM (either are being occupied artificially or not), but the energy difference between the occupied and unoccupied defect states is changed so that the bandgap of the original CBM and VBM present in the defective material matches with the experimental bandgap of the pristine material
+        CM_BG = TrueBG  # the bandgap considered for the CM calculations is the
+        # experimental bandgap of the pristine material, since there are no
+        # defects in this case
+        # If defects are included, we assume that the occupied defect states
+        # are already correctly positioned in the bandgap, but the unoccupied
+        # defect states are not. Therefore, we apply a scissor to the CBM and
+        # above, including the unoccupied defect states, i.e. that the
+        # initially occupied states are kept at the same energy difference
+        # with respect to the VBM, and the initially unoccupied states are
+        # kept at the same energy difference with respect to the CBM (either
+        # are being occupied artificially or not), but the energy difference
+        # between the occupied and unoccupied defect states is changed so that
+        # the bandgap of the original CBM and VBM present in the defective
+        # material matches with the experimental bandgap of the pristine
+        # material
     else:
         if occupy_unoccupied_defect_bands is True:
-            # The bandgap of the defective material is calculated as the energy difference between the lowest initially unoccupied defect state (before it is occupied) and the highest initially occupied defect state. The scissor is then applied to shift down the occupied defect states and VB together, since the initially unoccupied defect states become the new VBM (i.e. at energy = 0), so that they keep the same energy difference with respect to each other, but they change their energy difference with respect to the unoccupied defect states and CBM.
-            defectBG = TrueBG - (np.min(energies[:, cbm:]) - np.min(energies[:, (cbm-num_unoccupied_defect_bands):cbm])) - (np.max(energies[:, (cbm-num_unoccupied_defect_bands-num_occupied_defect_bands):(cbm-num_unoccupied_defect_bands)]) - np.max(energies[:, :(cbm-num_unoccupied_defect_bands-num_occupied_defect_bands)])) 
-            CALC_BG = np.min(energies[:, (cbm-num_unoccupied_defect_bands):cbm]) - np.max(energies[:, (cbm-num_unoccupied_defect_bands-num_occupied_defect_bands):(cbm-num_unoccupied_defect_bands)])
+            # The bandgap of the defective material is calculated as the
+            # energy difference between the lowest initially unoccupied
+            # defect state (before it is occupied) and the highest initially
+            # occupied defect state. The scissor is then applied to shift down
+            # the occupied defect states and VB together, since the initially
+            # unoccupied defect states become the new VBM (i.e. at energy = 0),
+            # so that they keep the same energy difference with respect to each
+            # other, but they change their energy difference with respect to
+            # the unoccupied defect states and CBM.
+            defectBG = (
+                TrueBG
+                - (np.min(energies[:, cbm:]) - np.min(
+                    energies[:, cbm - num_unoccupied_defect_bands:cbm]
+                ))
+                - (np.max(
+                    energies[
+                        :,
+                        cbm - num_unoccupied_defect_bands
+                        - num_occupied_defect_bands:cbm
+                        - num_unoccupied_defect_bands,
+                    ]
+                ) - np.max(
+                    energies[
+                        :,
+                        :cbm - num_unoccupied_defect_bands
+                        - num_occupied_defect_bands,
+                    ]
+                ))
+            )
+            CALC_BG = (
+                np.min(energies[:, cbm - num_unoccupied_defect_bands:cbm])
+                - np.max(
+                    energies[
+                        :,
+                        cbm - num_unoccupied_defect_bands
+                        - num_occupied_defect_bands:cbm
+                        - num_unoccupied_defect_bands,
+                    ]
+                )
+            )
             scissor = defectBG - CALC_BG
             log('Scissor operation:')
             log(f'Experimental bandgap of pristine material: {TrueBG} eV')
-            log(f'Calculated experimental bandgap of defective material, taking into account mid-gap states: {defectBG} eV')
-            log(f'Shifting down occupied defect states and VB with: {scissor:1.6f} eV (with respect to the lowest unoccupied defect state)')
+            log('Calculated experimental bandgap of defective material,')
+            log(f'taking into account mid-gap states: {defectBG} eV')
+            log('Shifting down occupied defect states and VB with:')
+            log(f'{scissor:1.6f} eV')
+            log('(with respect to the lowest unoccupied defect state)')
             log('Please check if the calculated bandgap is indeed in eV.')
             log()
-            energies[:, :(cbm-num_unoccupied_defect_bands)] = energies[:, :(cbm-num_unoccupied_defect_bands)] - scissor
-            CM_BG = min_conduction_energy - max_valence_energy # the bandgap considered for the CM calculations is the energy difference between the original CBM of the pristine material and the highest energy of the inititialy unoccupied states (since they have been occupied artificaly, so they are the new VBM).
+            energies[:, :(cbm-num_unoccupied_defect_bands)] = \
+                energies[:, :(cbm-num_unoccupied_defect_bands)] - scissor
+            CM_BG = min_conduction_energy - max_valence_energy  # the bandgap
+            # considered for the CM calculations is the energy difference
+            # between the original CBM of the pristine material and the
+            # highest energy of the initially unoccupied states (since
+            # they have been occupied artificially, so they are the new VBM).
         else:
-            # The bandgap of the defective material is calculated as the energy difference between the the lowest initially unoccupied defect state and the highest occupied defect state (which in this case acts as VBM). The scissor is then applied to the CBM and above, including the unoccupied defect states, so that the initially occupied defect states and VB are kept at the same energy (i.e. they are not shifted), and the initially unoccupied defect states and CBM are kept at the same energy difference with respect to each other, but the energy difference between the occupied and unoccupied defect states is changed so that the bandgap of the original CBM and VBM present in the defective material matches with the experimental bandgap of the pristine material
-            defectBG = TrueBG - (np.min(energies[:, (cbm+num_unoccupied_defect_bands):]) - min_conduction_energy) - (max_valence_energy - np.max(energies[:, :(cbm-num_occupied_defect_bands)]))
+            # The bandgap of the defective material is calculated as the
+            # energy difference between the the lowest initially unoccupied
+            # defect state and the highest occupied defect state (which in
+            # this case acts as VBM). The scissor is then applied to the CBM
+            # and above, including the unoccupied defect states, so that the
+            # initially occupied defect states and VB are kept at the same
+            # energy (i.e. they are not shifted), and the initially unoccupied
+            # defect states and CBM are kept at the same energy difference with
+            # respect to each other, but the energy difference between the
+            # occupied and unoccupied defect states is changed so that the
+            # bandgap of the original CBM and VBM present in the defective
+            # material matches with the experimental bandgap of the pristine
+            # material
+            defectBG = TrueBG - (
+                np.min(
+                    energies[:, (
+                        cbm+num_unoccupied_defect_bands):]
+                ) - min_conduction_energy
+            ) - (
+                max_valence_energy -
+                np.max(energies[:, :(cbm-num_occupied_defect_bands)]))
             CALC_BG = min_conduction_energy - max_valence_energy
             scissor = defectBG - CALC_BG
             log('Scissor operation:')
             log(f'Experimental bandgap of pristine material: {TrueBG} eV')
-            log(f'Calculated experimental bandgap of defective material, taking into account mid-gap states: {defectBG} eV')
-            log(f'Shifting up CBM and above, including the unoccupied defect states, with: {scissor:1.6f} eV (with respect to the highest occupied defect state)')
+            log('Calculated experimental bandgap of defective material,')
+            log(f'taking into account mid-gap states: {defectBG} eV')
+            log('Shifting up CBM and above, including the unoccupied defect')
+            log(f'states, with: {scissor:1.6f} eV (with respect to the')
+            log('highest occupied defect state)')
             log('Please check if the calculated bandgap is indeed in eV.')
             log()
             energies[:, cbm:] = energies[:, cbm:] + scissor
-            CM_BG = defectBG # the bandgap considered for the CM calculations is the energy difference between the occupied and unoccupied defect states, considering the value of TrueBG for their energy correction
+            CM_BG = defectBG  # the bandgap considered for the CM calculations
+            # is the energy difference between the occupied and unoccupied
+            # defect states, considering the value of TrueBG for their
+            # energy correction
 
     return reciprocal_lattice, reciprocal_lattice_inv, \
         kpoints, energies, CM_BG
@@ -686,13 +780,16 @@ if __name__ == "__main__":      # This is needed if you want to import
     Emax = input_data.get('Emax')  # eV
     etol = input_data.get('etol')  # eV
 
-    ##########################################################################################
+    ###########################################################################
     # Defects parameters.
     defects = input_data.get('defects', False)
-    occupy_unoccupied_defect_bands = input_data.get('occupy_unoccupied_defect_bands', False)
-    num_unoccupied_defect_bands = input_data.get('num_unoccupied_defect_bands', 0)
-    num_occupied_defect_bands = input_data.get('num_occupied_defect_bands', 0)
-    ##########################################################################################
+    occupy_unoccupied_defect_bands = input_data.get(
+        'occupy_unoccupied_defect_bands', False)
+    num_unoccupied_defect_bands = input_data.get(
+        'num_unoccupied_defect_bands', 0)
+    num_occupied_defect_bands = input_data.get(
+        'num_occupied_defect_bands', 0)
+    ###########################################################################
 
     run_CM_calculations = input_data.get('run_CM_calculations', True)
     save_kfile = input_data.get('save_kfile', False)
