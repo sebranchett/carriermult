@@ -48,3 +48,4 @@ So far, it has been used on the following systems:
 - MoTe2 (as described in the publication and using Quantum ESPRESSO on DelftBlue)
 - PbS (as described in the publication)
 - PbSe (as described in the publication)
+- WSe2
