@@ -4,6 +4,8 @@
 
 Please see Sven's excellent [documentation](./cmscript_manual.md).
 
+[Aniol Anglada Trias](https://es.linkedin.com/in/aniol-anglada-trias-04b9983b2) extended the functionality to allow for calculations on crystal supercells for the study of defects, taking into account intra-bandgap defect states. Aniol did this as part of his B.Sc. thesis project.
+
 If you use this code in your research, please cite the following publication:
 [New Theoretical Model to Describe Carrier Multiplication in Semiconductors: Explanation of Disparate Efficiency in MoTe<sub>2</sub> versus PbS and PbSe.](https://doi.org/10.1021/acs.jpcc.4c00383)
 
