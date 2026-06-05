@@ -45,6 +45,28 @@ etol: 0.01                 # float; default 0.01; This value represents the
 #                            Note: the error tolerance for momentum
 #                            conservation is 1E-6 which was tested and found
 #                            to be a good tolerance
+#################################################################################################################
+# PARAMETERS IF WORKING WITH DEFECTS; SET EVERYTHING TO False and 0 IF NOT WORKING WITH DEFECTS!
+
+# Are there defects in the material? True or False.
+defects: False              # Boolean; default False; If True, the script considers that the material has defects,
+#                             and in consequence mid-gap states.
+
+# Occupy artificially the unoccupied defect bands or not.
+occupy_unoccupied_defect_bands: False  # Boolean; default False; If True, the script artificially occupies the unoccupied 
+#                                        defect bands (mid-gap states) of the defected material
+
+# Number of unoccupied defect bands (mid-gap states).
+num_unoccupied_defect_bands: 4         # Integer; default 0; This is the number of unoccupied defect bands (mid-gap states) 
+#                                        of the defected material. If occupy_unoccupied_defect_bands is True, these bands will be
+#                                        artificially occupied. Otherwise, they will be considered unoccupied.
+#                                        However, in both cases, this number is used to apply the scissor operator to the correct bands.
+
+# Number of occupied defect bands (mid-gap states).
+num_occupied_defect_bands: 2         # Integer; default 0; This is the number of occupied defect bands (mid-gap states) 
+#                                      of the defected material. They are only used to apply the scissor operator to the correct bands.
+
+#################################################################################################################
 
 logfilename: 'log.txt'     # String; default 'log.txt'; Defines the name of
 #                            the log file
@@ -59,6 +81,6 @@ save_CMfile: False         # Boolean; default False; Save the entire array of
 kfilename: 'k_transitions.csv'
 CMfilename: 'CM_initial_states_8x8x4_0.85eV.csv'
 ###############################################################################
-remove_degenerate: True    # Boolean; default True; Removes degenerate energy
+remove_degenerate: True    # Boolean; default False; Removes degenerate energy
 #                            bands from calculations. This saves computation
 #                            time
