@@ -72,3 +72,6 @@ So far, it has been used on the following systems:
 - PbS (as described in the publication)
 - PbSe (as described in the publication)
 - WSe2
+
+> [!WARNING]
+> Since the introduction of the DelftBlue 2026 stack, the Abinit example is no longer working.
