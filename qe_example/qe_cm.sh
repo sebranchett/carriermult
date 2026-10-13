@@ -7,16 +7,11 @@
 #SBATCH --partition=compute
 #SBATCH --account=innovation
 
-# Load modules:
-module load 2025
-module load miniconda3
-
-# Activate conda, run job, deactivate conda
-conda activate carriermult
+# Activate uv environment at head of repository
+source ${PWD}/../.venv/bin/activate
 
 date
 
 srun python ../cmscript.py
 
 date
-conda deactivate

@@ -1,0 +1,26 @@
+[project]
+name = "carriermult"
+version = "0.1.0"
+description = "Converted from environment.yaml"
+readme = "README.md"
+requires-python = ">=3.12.11"
+dependencies = [
+    "abipy>=0.9.8",
+    "ipykernel>=7.0.1",
+    "jupyterlab>=4.5.3",
+    "nbdime>=4.0.2",
+    "netcdf4>=1.7.2",
+    "numpy>=1.26.4",
+    "scipy>=1.16.1",
+    "scikit-learn>=1.7.2",
+    "threadpoolctl>=3.6.0",
+    "yambopy>=0.4.6",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+package = false
+
