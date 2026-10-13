@@ -26,20 +26,43 @@ Depending on the size of your system, steps 1 and 2 can take a significant amoun
 The files `Ncm.csv` and `reduced_energies.csv` can then be transferred to your local machine for analysis in step 3.
 
 ## Installation
-The Python code has a number of dependencies, which can be installed with [miniconda](https://docs.conda.io/en/latest/). Make sure you have miniconda on both your laptop and on DelftBlue, see the [DelftBlue Documentation](https://doc.dhpc.tudelft.nl/delftblue/howtos/conda/).
-```bash
-conda env create -f environment.yml
-```
-This will create a conda environment named `carriermult`.
+The Python code has a number of dependencies, which can be installed with [uv](https://docs.astral.sh/uv/). Make sure you have uv on both your laptop and on DelftBlue, see the [uv installation instructions](https://docs.astral.sh/uv/getting-started/installation/) and the [DelftBlue Documentation](https://doc.dhpc.tudelft.nl/delftblue/Python/#uv).
 
-You will need to activate the conda environment each time you start a new terminal session, and in your batch script.
+Clone this repository and move into the cloned directory, then create a virtual environment with the Python dependencies defined in `pyproject.toml`.
+
+To create the uv virtual environment on your laptop:
 ```bash
-conda activate carriermult
+uv sync
 ```
 
-Depending on your setup, you may need to do the following to use the `carriermult` environment in Jupyter notebooks:
+To create the uv virtual environment on DelftBlue type:
 ```bash
-python -m ipykernel install --name carriermult --display-name "carriermult"
+module load 2026 cpu python
+uv venv --python "$(which python)"
+uv sync
+```
+
+This sets up the virtual environment. You will need to **activate the virtual environment every time** you start a new terminal session, and in your batch script.
+
+To activate the virtual environment on a Windows Git Bash system, use the following command:
+
+```bash
+source .venv/Scripts/activate
+```
+On macOS or Linux, use the following command:
+
+```bash
+source .venv/bin/activate
+```
+
+In your SLURM script on DelftBlue:
+```
+source /path/to/project/.venv/bin/activate
+```
+
+Depending on your setup, you may need to do the following to use the virtual environment in Jupyter notebooks on your laptop:
+```bash
+uv run ipython kernel install --user --name=carriermult --display-name "carriermult"
 ```
 
 ## Warning
