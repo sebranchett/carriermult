@@ -13,7 +13,7 @@ export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 
 module use --append /projects/electronic_structure/.modulefiles
 module load yambo
-module load gnuplot
+module load 2026 cpu gnuplot
 
 ###############################################################################
 # Initial set up

@@ -9,3 +9,5 @@ uv sync  # or: uv pip install -r pyproject.toml
 # uv run python my_script.py  # to run commands in the environment without activating it
 # source .venv/bin/activate  # in interactive work
 # source /path/to/test_project/.venv/bin/activate  # in slurm job
+# uv run ipython kernel install --user --name=carriermult --display-name "carriermult"
+
