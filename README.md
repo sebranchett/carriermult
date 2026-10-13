@@ -28,7 +28,7 @@ The files `Ncm.csv` and `reduced_energies.csv` can then be transferred to your l
 ## Installation
 The Python code has a number of dependencies, which can be installed with [uv](https://docs.astral.sh/uv/). Make sure you have uv on both your laptop and on DelftBlue, see the [uv installation instructions](https://docs.astral.sh/uv/getting-started/installation/) and the [DelftBlue Documentation](https://doc.dhpc.tudelft.nl/delftblue/Python/#uv).
 
-Clone this repository and move into the cloned directory, then create a virtual environment with the Python dependencies defined in `pyproject.toml`.
+Clone this repository and move into the cloned directory. Then create a virtual environment with the Python dependencies defined in `pyproject.toml`.
 
 To create the uv virtual environment on your laptop:
 ```bash
